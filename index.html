@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>CMA MCQ Portal</title><style>
+:root{
+  --cream:#faf6ee;--teal:#0d3b3e;--teal-dark:#082627;
+  --gold:#c8a24a;--gold-light:#e4c98a;--text:#22302f;
+  --card-bg:#fff;--border:#e4dcc8;--danger:#b3261e;--danger-bg:#fdecea;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+#loadingScreen{position:fixed;inset:0;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:999;color:var(--gold-light)}
+#loadingScreen .spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .9s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#pageContent{display:none}
+header.topbar{background:var(--teal);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-size:20px;font-weight:800;letter-spacing:.5px}.brand span{color:var(--gold)}
+.user-area{display:flex;align-items:center;gap:12px;font-size:13.5px}
+#userEmail{background:rgba(255,255,255,.1);padding:6px 12px;border-radius:20px;color:var(--gold-light);word-break:break-all}
+#logoutBtn{background:var(--gold);color:var(--teal-dark);border:0;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer}
+main{max-width:1100px;margin:0 auto;padding:30px 20px 60px}
+.hero{text-align:center;margin-bottom:34px}.hero h1{font-size:30px;color:var(--teal);margin:0 0 6px;font-weight:800}.hero p{color:#5b6b69;font-size:15px;margin:0}
+h2.section-title{font-size:18px;color:var(--teal-dark);border-left:4px solid var(--gold);padding-left:10px;margin:34px 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:22px;text-decoration:none;color:inherit;display:block;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(13,59,62,.05)}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(13,59,62,.12)}
+.card h3{margin:0 0 8px;font-size:16px;color:var(--teal)}.card p{margin:0;font-size:13.5px;color:#5b6b69;line-height:1.45}
+.card.full-test{background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;border:0}
+.card.full-test h3{color:var(--gold-light)}.card.full-test p{color:#d9e5e4}
+.card.supplement{border:1px dashed var(--gold);background:#fffaf0}.card.supplement h3{color:#8a6d1f}
+.badge{display:inline-block;margin-top:10px;font-size:11px;font-weight:700;color:#fff;background:var(--gold);padding:3px 10px;border-radius:12px}
+.access-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:25px}
+.access-title{font-size:15px;font-weight:700;color:var(--teal);margin-bottom:8px}
+.access-tags{display:flex;gap:8px;flex-wrap:wrap}.access-tag{padding:7px 11px;border-radius:20px;background:#e9f2f1;color:var(--teal);font-size:12px;font-weight:700}
+.expiry{margin-top:10px;color:#5b6b69;font-size:13px}
+.locked-note{padding:18px;border:1px dashed var(--gold);border-radius:14px;background:#fffaf0;color:#5b6b69;text-align:center}
+.hidden{display:none!important}
+footer{text-align:center;padding:24px;font-size:12.5px;color:#8a938f}
+@media(max-width:600px){main{padding:25px 14px 45px}.hero h1{font-size:26px}.user-area{width:100%;justify-content:space-between}}
+</style></head><body>
+<div id="loadingScreen"><div class="spinner"></div><div id="loadingText">Checking sign-in status…</div></div>
+
+<div id="pageContent"><header class="topbar"><div class="brand">CMA<span>.</span> MCQ Portal</div></header><main><div class="hero"><h1>CMA</h1><p>MCQ Practice &amp; Full-Fledged Test</p></div><div class="access-card"><div class="access-title">Your Access</div><div id="accessTags" class="access-tags"></div><div id="expiryText" class="expiry"></div></div>
+<section id="foundationContent" class="hidden"><h2 class="section-title">CMA Foundation — Subjects</h2><div class="grid"><a class="card" href="foundation/law-business-communication/index.html"><h3>Fundamentals of Law and Business Communication</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/financial-cost-accounting/index.html"><h3>Fundamentals of Financial and Cost Accounting</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/business-mathematics-statistics/index.html"><h3>Fundamentals of Business Mathematics and Statistics</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/business-economics-management/index.html"><h3>Fundamentals of Business Economics and Management</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="foundation/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Foundation</h3><p>Combined test area</p></a></div></section>
+<!--CMA INTER GROUP 1 SUBJECT DETAILS-->
+  
+  <section id="interGroup1Content" class="hidden"><h2 class="section-title">CMA Intermediate Group 1 — Subjects</h2><div class="grid"><a class="card" href="inter-group-1/business-law-and-ethics/index.html"><h3>Business Law and Ethics</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-1/financial-accounting/index.html"><h3>Financial Accounting</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-1/direct-and-indirect-taxation/index.html"><h3>Direct and Indirect Taxation</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-1/cost-accounting/index.html"><h3>Cost Accounting</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="inter-group-1/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Intermediate Group 1</h3><p>Combined test area</p></a></div></section>
+  
+  <!-- CMA INTER GROUP 2 SUBJECT DETAILS-->
+  
+  <section id="interGroup2Content" class="hidden"><h2 class="section-title">CMA Intermediate Group 2 — Subjects</h2><div class="grid"><a class="card" href="inter-group-2/omsm/index.html"><h3>Operation Management and Strategic Management</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-2/accounts-and-audit/index.html"><h3>Corporate Accounting and Auditing</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-2/fmda/index.html"><h3>Financial Management and Business Data Analytics</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-2/management-accounting/index.html"><h3>Management Accounting</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="inter-group-2/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Intermediate Group 2</h3><p>Combined test area</p></a></div></section>
+
+  <!-- FINAL GROUP 3 SUBJECT DETAILS-->
+  
+  <section id="finalGroup3Content" class="hidden"><h2 class="section-title">CMA Final Group 3 — Subjects</h2><div class="grid"><a class="card" href="scm/index.html"><h3>Strategic Cost Management</h3><p>Subject MCQ practice</p></a><a class="card" href="sfm/index.html"><h3>Strategic Financial Management</h3><p>Subject MCQ practice</p></a><a class="card" href="direct-tax/index.html"><h3>Direct Tax & International Laws</h3><p>Subject MCQ practice</p></a><a class="card" href="corporate-economic-laws/index.html"><h3>Corporate & Economic Laws</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="scm/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Final Group 3</h3><p>Combined test area</p></a></div></section>
+
+  <!-- FINAL GROUP 4 SUBJECT DETAILS-->
+  
+  <section id="finalGroup4Content" class="hidden"><h2 class="section-title">CMA Final Group 4 — Subjects</h2><div class="grid"><a class="card" href="final-group-4/cost-and-audit/index.html"><h3>Cost and Management Audit</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/cfr/index.html"><h3>Corporate Financial Reporting</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/indirect-tax-and-laws/index.html"><h3>Indirect Tax Law and Practice</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/spmbv/index.html"><h3>20A — Strategic Performance and Business Valuation</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/risk-management-bank-insurance/index.html"><h3>20B — Risk Management in Banking and Insurance</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/entr-and-startup/index.html"><h3>20C — Entrepreneurship and Startup</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="final-group-4/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Final Group 4</h3><p>Combined test area</p></a></div></section><section id="noContentMessage" class="hidden"><h2 class="section-title">Available Content</h2><div class="locked-note">Your access has been activated successfully. Content for this examination/group will appear here when published.</div></section></main><footer>&copy; 2026 CMA MCQ Portal</footer></div><script>
+(function(){
+"use strict";
+const pageContent=document.getElementById("pageContent");
+const accessTags=document.getElementById("accessTags");
+const expiryText=document.getElementById("expiryText");
+const noContentMessage=document.getElementById("noContentMessage");
+const loadingScreen=document.getElementById("loadingScreen");
+loadingScreen.style.display="none";
+pageContent.style.display="block";
+accessTags.innerHTML="<span class='access-tag'>Test Mode — All Groups Open</span>";
+expiryText.textContent="Google authentication is disabled in this test version.";
+["foundationContent","interGroup1Content","interGroup2Content","finalGroup3Content","finalGroup4Content"].forEach(function(id){
+ const el=document.getElementById(id);
+ if(el)el.classList.remove("hidden");
+});
+noContentMessage.classList.add("hidden");
+})();
+</script>
+</body></html>
