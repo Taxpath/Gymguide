@@ -1,0 +1,451 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>CMA MCQ Portal</title><style>
+:root{
+  --cream:#faf6ee;--teal:#0d3b3e;--teal-dark:#082627;
+  --gold:#c8a24a;--gold-light:#e4c98a;--text:#22302f;
+  --card-bg:#fff;--border:#e4dcc8;--danger:#b3261e;--danger-bg:#fdecea;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--cream);color:var(--text);min-height:100vh}
+#loadingScreen{position:fixed;inset:0;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:999;color:var(--gold-light)}
+#loadingScreen .spinner{width:44px;height:44px;border:4px solid rgba(255,255,255,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .9s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#authScreen{display:none;min-height:100vh;align-items:center;justify-content:center;padding:24px}
+.login-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:40px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(13,59,62,.12)}
+.login-logo{font-size:34px;font-weight:800;color:var(--teal);letter-spacing:1px}.login-logo span{color:var(--gold)}
+.login-title{font-size:20px;font-weight:700;margin-top:10px;color:var(--teal-dark)}
+.login-sub{font-size:14px;color:#5b6b69;margin:10px 0 26px;line-height:1.5}
+#googleLogin{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 18px;border-radius:10px;border:1px solid var(--border);background:#fff;color:#22302f;font-size:15px;font-weight:600;cursor:pointer}
+#googleLogin:disabled{opacity:.6;cursor:not-allowed}
+#googleLogin svg{width:20px;height:20px;flex-shrink:0}
+#authMessage{margin-top:18px;font-size:13.5px;line-height:1.5;min-height:18px}
+#authMessage.error{color:var(--danger);background:var(--danger-bg);border:1px solid #f3c6c2;padding:10px 12px;border-radius:8px}
+#pageContent{display:none}
+header.topbar{background:var(--teal);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-size:20px;font-weight:800;letter-spacing:.5px}.brand span{color:var(--gold)}
+.user-area{display:flex;align-items:center;gap:12px;font-size:13.5px}
+#userEmail{background:rgba(255,255,255,.1);padding:6px 12px;border-radius:20px;color:var(--gold-light);word-break:break-all}
+#logoutBtn{background:var(--gold);color:var(--teal-dark);border:0;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13.5px;cursor:pointer}
+main{max-width:1100px;margin:0 auto;padding:30px 20px 60px}
+.hero{text-align:center;margin-bottom:34px}.hero h1{font-size:30px;color:var(--teal);margin:0 0 6px;font-weight:800}.hero p{color:#5b6b69;font-size:15px;margin:0}
+h2.section-title{font-size:18px;color:var(--teal-dark);border-left:4px solid var(--gold);padding-left:10px;margin:34px 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:22px;text-decoration:none;color:inherit;display:block;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(13,59,62,.05)}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(13,59,62,.12)}
+.card h3{margin:0 0 8px;font-size:16px;color:var(--teal)}.card p{margin:0;font-size:13.5px;color:#5b6b69;line-height:1.45}
+.card.full-test{background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;border:0}
+.card.full-test h3{color:var(--gold-light)}.card.full-test p{color:#d9e5e4}
+.card.supplement{border:1px dashed var(--gold);background:#fffaf0}.card.supplement h3{color:#8a6d1f}
+.badge{display:inline-block;margin-top:10px;font-size:11px;font-weight:700;color:#fff;background:var(--gold);padding:3px 10px;border-radius:12px}
+.access-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:25px}
+.access-title{font-size:15px;font-weight:700;color:var(--teal);margin-bottom:8px}
+.access-tags{display:flex;gap:8px;flex-wrap:wrap}.access-tag{padding:7px 11px;border-radius:20px;background:#e9f2f1;color:var(--teal);font-size:12px;font-weight:700}
+.expiry{margin-top:10px;color:#5b6b69;font-size:13px}
+.locked-note{padding:18px;border:1px dashed var(--gold);border-radius:14px;background:#fffaf0;color:#5b6b69;text-align:center}
+.hidden{display:none!important}
+footer.contact-footer{text-align:center;padding:34px 20px 20px;margin-top:30px;background:linear-gradient(135deg,var(--teal),var(--teal-dark));color:#fff;border-radius:18px 18px 0 0}.contact-footer h3{margin:0 0 8px;font-size:21px;color:var(--gold-light)}.contact-footer p{margin:0 auto 18px;max-width:620px;color:#d9e5e4;font-size:13.5px;line-height:1.6}.contact-details{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}.contact-details a{display:inline-flex;align-items:center;gap:7px;text-decoration:none;padding:10px 16px;border-radius:9px;font-weight:700;font-size:13px}.contact-email{background:#fff;color:var(--teal-dark)}.contact-whatsapp{background:#c8a24a;color:var(--teal-dark)}.contact-details a:hover{transform:translateY(-2px)}.contact-divider{height:1px;background:rgba(255,255,255,.18);max-width:800px;margin:0 auto 16px}.contact-footer .copyright{font-size:12px;color:#b9c8c6}@media(max-width:600px){footer.contact-footer{padding:28px 14px 18px}.contact-details{flex-direction:column;align-items:center}.contact-details a{width:100%;max-width:300px;justify-content:center}}
+@media(max-width:600px){main{padding:25px 14px 45px}.hero h1{font-size:26px}.user-area{width:100%;justify-content:space-between}}
+.quick-contact-card{margin:0 0 26px;padding:16px 18px;background:#fff;border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:18px;box-shadow:0 2px 8px rgba(13,59,62,.05)}
+.quick-contact-title{font-size:15px;font-weight:800;color:var(--teal)}
+.quick-contact-sub{margin-top:4px;font-size:12.5px;color:#5b6b69;line-height:1.45}
+.quick-contact-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.quick-contact-actions a{display:inline-block;text-decoration:none;padding:8px 11px;border-radius:8px;background:#e9f2f1;color:var(--teal);font-size:12px;font-weight:700}
+.quick-contact-actions a:hover{transform:translateY(-1px)}
+.quick-contact-actions .feedback-link{background:var(--gold);color:var(--teal-dark)}
+.feedback-section{margin-top:36px;padding:24px 20px;background:#fff;border:1px solid var(--border);border-radius:16px;text-align:center;scroll-margin-top:20px}
+.feedback-section h3{margin:0 0 8px;color:var(--teal);font-size:20px}
+.feedback-section p{margin:0 auto 16px;max-width:700px;color:#5b6b69;font-size:13.5px;line-height:1.6}
+.feedback-contact{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.feedback-contact a{display:inline-block;text-decoration:none;padding:9px 14px;border-radius:9px;font-size:12.5px;font-weight:700;background:var(--teal);color:#fff}
+.feedback-contact a:hover{transform:translateY(-1px)}
+@media(max-width:600px){.quick-contact-card{flex-direction:column;align-items:flex-start}.quick-contact-actions{justify-content:flex-start}.quick-contact-actions a{font-size:11.5px}}</style></head><body>
+<div id="loadingScreen"><div class="spinner"></div><div id="loadingText">Checking sign-in status…</div></div>
+<div id="authScreen"><div class="login-card"><div class="login-logo">CMA<span>.</span></div><div class="login-title">CMA MCQ Portal</div><p class="login-sub">Sign in with an authorised Google account to continue.</p><button id="googleLogin" type="button"><span id="googleLoginLabel">Continue with Google</span></button><div id="authMessage"></div></div></div>
+<div id="pageContent"><header class="topbar"><div class="brand">CMA<span>.</span> MCQ Portal</div><div class="user-area"><span id="userEmail"></span><button id="logoutBtn" type="button">Sign out</button></div></header><main><div class="hero"><h1>CMA</h1><p>MCQ Practice &amp; Full-Fledged Test</p></div><div class="quick-contact-card">
+  <div>
+    <div class="quick-contact-title">Need Help or Want to Share Feedback?</div>
+    <div class="quick-contact-sub">Your feedback is very important to us. Have a problem, suggestion, or found an error?</div>
+  </div>
+  <div class="quick-contact-actions">
+    <a href="mailto:taxxpath@gmail.com?subject=CMA%20MCQ%20Portal%20Support">📧 Email: taxxpath@gmail.com</a>
+    <a href="https://wa.me/917003872845" target="_blank" rel="noopener">💬 WhatsApp: 70038 72845</a>
+    <a href="#feedbackSection" class="feedback-link">📝 Share Your Feedback</a>
+  </div>
+</div><div class="access-card"><div class="access-title">Your Access</div><div id="accessTags" class="access-tags"></div><div id="expiryText" class="expiry"></div></div>
+<section id="foundationContent" class="hidden"><h2 class="section-title">CMA Foundation — Subjects</h2><div class="grid"><a class="card" href="foundation/law-business-communication/index.html"><h3>Fundamentals of Law and Business Communication</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/financial-cost-accounting/index.html"><h3>Fundamentals of Financial and Cost Accounting</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/business-mathematics-statistics/index.html"><h3>Fundamentals of Business Mathematics and Statistics</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/business-economics-management/index.html"><h3>Fundamentals of Business Economics and Management</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="foundation/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Foundation</h3><p>Combined test area</p></a></div></section>
+<!--CMA INTER GROUP 1 SUBJECT DETAILS-->
+  
+  <section id="interGroup1Content" class="hidden"><h2 class="section-title">CMA Intermediate Group 1 — Subjects</h2><div class="grid"><a class="card" href="inter-group-1/business-law-and-ethics/index.html"><h3>Business Law and Ethics</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-1/financial-accounting/index.html"><h3>Financial Accounting</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-1/direct-and-indirect-taxation/index.html"><h3>Direct and Indirect Taxation</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-1/cost-accounting/index.html"><h3>Cost Accounting</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="inter-group-1/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Intermediate Group 1</h3><p>Combined test area</p></a></div></section>
+  
+  <!-- CMA INTER GROUP 2 SUBJECT DETAILS-->
+  
+  <section id="interGroup2Content" class="hidden"><h2 class="section-title">CMA Intermediate Group 2 — Subjects</h2><div class="grid"><a class="card" href="inter-group-2/omsm/index.html"><h3>Operation Management and Strategic Management</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-2/accounts-and-audit/index.html"><h3>Corporate Accounting and Auditing</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-2/fmda/index.html"><h3>Financial Management and Business Data Analytics</h3><p>Subject MCQ practice</p></a><a class="card" href="inter-group-2/management-accounting/index.html"><h3>Management Accounting</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="inter-group-2/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Intermediate Group 2</h3><p>Combined test area</p></a></div></section>
+
+  <!-- FINAL GROUP 3 SUBJECT DETAILS-->
+  
+  <section id="finalGroup3Content" class="hidden"><h2 class="section-title">CMA Final Group 3 — Subjects</h2><div class="grid"><a class="card" href="scm/index.html"><h3>Strategic Cost Management</h3><p>Subject MCQ practice</p></a><a class="card" href="sfm/index.html"><h3>Strategic Financial Management</h3><p>Subject MCQ practice</p></a><a class="card" href="direct-tax/index.html"><h3>Direct Tax & International Laws</h3><p>Subject MCQ practice</p></a><a class="card" href="corporate-economic-laws/index.html"><h3>Corporate & Economic Laws</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="scm/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Final Group 3</h3><p>Combined test area</p></a></div></section>
+
+  <!-- FINAL GROUP 4 SUBJECT DETAILS-->
+  
+  <section id="finalGroup4Content" class="hidden"><h2 class="section-title">CMA Final Group 4 — Subjects</h2><div class="grid"><a class="card" href="final-group-4/cost-and-audit/index.html"><h3>Cost and Management Audit</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/cfr/index.html"><h3>Corporate Financial Reporting</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/indirect-tax-and-laws/index.html"><h3>Indirect Tax Law and Practice</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/spmbv/index.html"><h3>20A — Strategic Performance and Business Valuation</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/risk-management-bank-insurance/index.html"><h3>20B — Risk Management in Banking and Insurance</h3><p>Subject MCQ practice</p></a><a class="card" href="final-group-4/entr-and-startup/index.html"><h3>20C — Entrepreneurship and Startup</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="final-group-4/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Final Group 4</h3><p>Combined test area</p></a></div></section><section id="noContentMessage" class="hidden"><h2 class="section-title">Available Content</h2><div class="locked-note">Your access has been activated successfully. Content for this examination/group will appear here when published.</div></section></main><section id="feedbackSection" class="feedback-section">
+  <h3>💬 Your Feedback Is Very Important to Us</h3>
+  <p>
+    CMA MCQ Portal is currently in its initial stage, so your genuine feedback can make a real difference.
+    If you face a problem, find an error, or have a suggestion, please share it with us.
+    <strong>We will take your feedback seriously and do our best to help resolve genuine issues.</strong>
+    Your feedback helps us make the portal better, simpler, and more useful for students.
+  </p>
+  <div class="feedback-contact">
+    <a href="mailto:taxxpath@gmail.com?subject=CMA%20MCQ%20Portal%20Feedback">📧 taxxpath@gmail.com</a>
+    <a href="https://wa.me/917003872845" target="_blank" rel="noopener">💬 70038 72845 (WhatsApp)</a>
+  </div>
+</section>
+<footer>&copy; 2026 CMA MCQ Portal</footer></div><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script><script>
+(function(){
+"use strict";
+
+const firebaseConfig={
+ apiKey:"AIzaSyA7tGvsDYyYLSWFPeS6lsxlP8gLOw53Wrk",
+ authDomain:"cma-mcq-portal.firebaseapp.com",
+ projectId:"cma-mcq-portal",
+ storageBucket:"cma-mcq-portal.firebasestorage.app",
+ messagingSenderId:"734935438365",
+ appId:"1:734935438365:web:40ea0a7677ef572234a2f4",
+ measurementId:"G-H6GDK7Y3RJ"
+};
+
+if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
+const auth=firebase.auth();
+const db=firebase.firestore();
+const ADMIN_EMAIL="taxxpath@gmail.com";
+
+const loadingScreen=document.getElementById("loadingScreen");
+const loadingText=document.getElementById("loadingText");
+const authScreen=document.getElementById("authScreen");
+const pageContent=document.getElementById("pageContent");
+const googleLogin=document.getElementById("googleLogin");
+const googleLoginLabel=document.getElementById("googleLoginLabel");
+const authMessage=document.getElementById("authMessage");
+const userEmail=document.getElementById("userEmail");
+const logoutBtn=document.getElementById("logoutBtn");
+const accessTags=document.getElementById("accessTags");
+const expiryText=document.getElementById("expiryText");
+const finalGroup3Content=document.getElementById("finalGroup3Content");
+const noContentMessage=document.getElementById("noContentMessage");
+
+function emailNorm(e){return(e||"").trim().toLowerCase();}
+let activityTimer=null;
+let currentTrackedUser=null;
+
+async function recordPortalVisit(){
+ try{
+  const key="taxpath_visitor_id";
+  let visitorId=localStorage.getItem(key);
+  if(!visitorId){
+   visitorId=(crypto&&crypto.randomUUID)?crypto.randomUUID():
+    ("v_"+Date.now()+"_"+Math.random().toString(36).slice(2));
+   localStorage.setItem(key,visitorId);
+  }
+  await db.collection("portalVisits").add({
+   visitorId:visitorId,
+   visitAt:firebase.firestore.FieldValue.serverTimestamp(),
+   path:location.pathname||"/",
+   referrer:document.referrer||"",
+   userAgent:navigator.userAgent||""
+  });
+ }catch(error){
+  console.error("Portal visit tracking failed:",error);
+ }
+}
+
+async function trackUserLogin(user){
+ if(!user||!user.uid)return;
+ const ref=db.collection("portalUsers").doc(user.uid);
+ const sessionKey="cma_login_recorded_"+user.uid;
+ const alreadyRecorded=sessionStorage.getItem(sessionKey)==="1";
+
+ const payload={
+  uid:user.uid,
+  email:emailNorm(user.email),
+  displayName:user.displayName||"",
+  photoURL:user.photoURL||"",
+  provider:user.providerData&&user.providerData[0]?user.providerData[0].providerId:"google.com",
+  lastActive:firebase.firestore.FieldValue.serverTimestamp(),
+  lastSeenPage:location.pathname||"/",
+  updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+ };
+
+ if(!alreadyRecorded){
+  payload.lastLogin=firebase.firestore.FieldValue.serverTimestamp();
+  payload.loginCount=firebase.firestore.FieldValue.increment(1);
+  sessionStorage.setItem(sessionKey,"1");
+ }
+
+ try{
+  const existing=await ref.get();
+  if(!existing.exists)payload.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+  await ref.set(payload,{merge:true});
+ }catch(error){
+  console.error("User tracking write failed:",error);
+ }
+}
+
+
+async function recordLoginEvent(user){
+  if(!user || !user.uid) return;
+
+  const sessionKey="cma_login_event_recorded_"+user.uid;
+  if(sessionStorage.getItem(sessionKey)==="1") return;
+
+  try{
+    await db.collection("loginEvents").add({
+      uid:user.uid,
+      email:emailNorm(user.email),
+      displayName:user.displayName||"",
+      provider:user.providerData&&user.providerData[0]
+        ? user.providerData[0].providerId
+        : "google.com",
+      loginAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    sessionStorage.setItem(sessionKey,"1");
+  }catch(error){
+    console.error("Login history write failed:",error);
+  }
+}
+
+async function trackUserActivity(){
+ const user=auth.currentUser;
+ if(!user||!user.uid)return;
+ try{
+  await db.collection("portalUsers").doc(user.uid).set({
+   uid:user.uid,
+   email:emailNorm(user.email),
+   lastActive:firebase.firestore.FieldValue.serverTimestamp(),
+   lastSeenPage:location.pathname||"/",
+   updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+  },{merge:true});
+ }catch(error){
+  console.error("Activity tracking failed:",error);
+ }
+}
+
+function handleVisibilityActivity(){
+ if(document.visibilityState==="visible"&&auth.currentUser)trackUserActivity();
+}
+
+function startActivityTracking(user){
+ currentTrackedUser=user;
+ if(activityTimer)clearInterval(activityTimer);
+ trackUserActivity();
+ activityTimer=setInterval(function(){
+  if(auth.currentUser&&auth.currentUser.uid===user.uid)trackUserActivity();
+ },5*60*1000);
+ document.addEventListener("visibilitychange",handleVisibilityActivity);
+}
+
+function stopActivityTracking(){
+ if(activityTimer){clearInterval(activityTimer);activityTimer=null;}
+ document.removeEventListener("visibilitychange",handleVisibilityActivity);
+ currentTrackedUser=null;
+}
+
+
+function showLoading(text){
+ loadingScreen.style.display="flex";
+ authScreen.style.display="none";
+ pageContent.style.display="none";
+ loadingText.textContent=text||"Checking sign-in status…";
+}
+function showLogin(){
+ loadingScreen.style.display="none";
+ authScreen.style.display="flex";
+ pageContent.style.display="none";
+}
+function showHome(){
+ loadingScreen.style.display="none";
+ authScreen.style.display="none";
+ pageContent.style.display="block";
+}
+
+function setMessage(text,type){
+ authMessage.textContent=text||"";
+ authMessage.className=type||"";
+}
+
+function friendlyError(error){
+ const code=error&&error.code?error.code:"";
+ const map={
+  "auth/popup-closed-by-user":"Google sign-in was cancelled.",
+  "auth/popup-blocked":"Google sign-in was blocked. Please allow pop-ups and try again.",
+  "auth/network-request-failed":"Network error. Please check your internet connection.",
+  "auth/operation-not-allowed":"Google sign-in is not enabled.",
+  "auth/unauthorized-domain":"This website domain is not authorised in Firebase Authentication."
+ };
+ return map[code]||"Sign-in failed. Please try again. ("+(code||"unknown error")+")";
+}
+
+function dateExpired(date){
+ if(!date)return false;
+ return date < new Date().toISOString().slice(0,10);
+}
+
+function applyAccess(data,isAdmin){
+ const access={
+  foundation:!!data.accessFoundation,
+  interGroup1:!!data.accessInterGroup1,
+  interGroup2:!!data.accessInterGroup2,
+  finalGroup3:!!data.accessFinalGroup3,
+  finalGroup4:!!data.accessFinalGroup4
+ };
+
+ const names=[];
+ if(isAdmin||access.foundation)names.push("CMA Foundation");
+ if(isAdmin||access.interGroup1)names.push("CMA Intermediate Group 1");
+ if(isAdmin||access.interGroup2)names.push("CMA Intermediate Group 2");
+ if(isAdmin||access.finalGroup3)names.push("CMA Final Group 3");
+ if(isAdmin||access.finalGroup4)names.push("CMA Final Group 4");
+
+ accessTags.innerHTML=names.map(n=>"<span class='access-tag'>"+n+"</span>").join("");
+
+ if(data.expiryDate && !isAdmin){
+   expiryText.textContent="Access expires on: "+data.expiryDate;
+ }else if(isAdmin){
+   expiryText.textContent="Administrator access: all examination groups";
+ }else{
+   expiryText.textContent="No expiry date set";
+ }
+
+ const groupSections={foundation:document.getElementById("foundationContent"),interGroup1:document.getElementById("interGroup1Content"),interGroup2:document.getElementById("interGroup2Content"),finalGroup3:document.getElementById("finalGroup3Content"),finalGroup4:document.getElementById("finalGroup4Content")};
+ Object.keys(groupSections).forEach(function(k){groupSections[k].classList.toggle("hidden",!(isAdmin||access[k]));});
+ const anyVisible=isAdmin||Object.keys(access).some(function(k){return access[k];});
+ noContentMessage.classList.toggle("hidden",anyVisible);
+}
+
+async function verifyAccess(user){
+ const email=emailNorm(user.email);
+ if(!email)return{approved:false,reason:"No Google email was returned."};
+
+ if(email===ADMIN_EMAIL){
+   return{approved:true,admin:true,data:{role:"admin"}};
+ }
+
+ // Global Student Portal Access
+ const globalRef=await db.doc("settings/globalAccess").get();
+ const globalOpen=globalRef.exists && globalRef.data().studentAccessOpen===true;
+
+ if(globalOpen){
+   return{
+     approved:true,
+     admin:false,
+     globalOpen:true,
+     data:{
+       role:"student",
+       accessFoundation:true,
+       accessInterGroup1:true,
+       accessInterGroup2:true,
+       accessFinalGroup3:true,
+       accessFinalGroup4:true,
+       expiryDate:null
+     }
+   };
+ }
+
+ const ref=await db.collection("approvedUsers").doc(email).get();
+ if(!ref.exists)return{approved:false,reason:"Your Google account has not been approved yet."};
+
+ const data=ref.data()||{};
+ if(String(data.status||"active").toLowerCase()!=="active"){
+   return{approved:false,reason:"Your account is currently inactive."};
+ }
+
+ if(data.expiryDate && dateExpired(data.expiryDate)){
+   return{approved:false,reason:"Your portal access has expired. Please contact the administrator."};
+ }
+
+ const hasAccess=[
+  data.accessFoundation,data.accessInterGroup1,data.accessInterGroup2,
+  data.accessFinalGroup3,data.accessFinalGroup4
+ ].some(Boolean);
+
+ if(!hasAccess){
+   return{approved:false,reason:"No examination/group access has been assigned to your account."};
+ }
+
+ return{approved:true,admin:false,data:data};
+}
+
+const provider=new firebase.auth.GoogleAuthProvider();
+provider.setCustomParameters({prompt:"select_account"});
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(console.error);
+
+googleLogin.addEventListener("click",function(){
+ googleLogin.disabled=true;
+ googleLoginLabel.textContent="Signing in…";
+ setMessage("");
+ auth.signInWithPopup(provider).catch(function(error){
+   console.error(error);
+   setMessage(friendlyError(error),"error");
+   googleLogin.disabled=false;
+   googleLoginLabel.textContent="Continue with Google";
+ });
+});
+
+logoutBtn.addEventListener("click",function(){
+ logoutBtn.disabled=true;
+ logoutBtn.textContent="Signing out…";
+ const uid=auth.currentUser&&auth.currentUser.uid;
+ stopActivityTracking();
+ if(uid)sessionStorage.removeItem("cma_login_recorded_"+uid);
+ auth.signOut().finally(function(){
+   logoutBtn.disabled=false;
+   logoutBtn.textContent="Sign out";
+ });
+});
+
+auth.onAuthStateChanged(async function(user){
+ googleLogin.disabled=false;
+ googleLoginLabel.textContent="Continue with Google";
+
+ if(!user){
+   stopActivityTracking();
+   showLogin();
+   return;
+ }
+
+ showLoading("Checking your examination access…");
+
+ try{
+   const result=await verifyAccess(user);
+
+   if(!result.approved){
+     await auth.signOut();
+     setMessage(result.reason,"error");
+     showLogin();
+     return;
+   }
+
+   userEmail.textContent=user.email||"";
+   applyAccess(Object.assign({},result.data||{},{globalOpen:!!result.globalOpen}),!!result.admin);
+
+   // Tracking is non-blocking: a tracking failure must never prevent portal access.
+   trackUserLogin(user).catch(function(error){
+     console.error("Non-blocking user tracking error:",error);
+   });
+   startActivityTracking(user);
+
+   setMessage("");
+   showHome();
+ }catch(error){
+   console.error("Access verification failed:",error);
+   stopActivityTracking();
+   await auth.signOut();
+   setMessage("Unable to verify access right now. Please try again.","error");
+   showLogin();
+ }
+});
+
+showLoading();
+})();
+</script>
+</body></html>
