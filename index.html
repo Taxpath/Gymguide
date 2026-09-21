@@ -338,6 +338,16 @@ footer strong{color:var(--teal)}
         <span id="discountInfo">Select a referral code below to get discount</span>
       </div>
 
+      <label for="attemptSelect">Select CMA Attempt / Group</label>
+      <select id="attemptSelect" style="width:100%;margin-top:7px;padding:13px;border:1px solid #d6cebb;border-radius:10px;outline:none;font-size:14px;background:#fff;">
+        <option value="">Select Course / Group</option>
+        <option value="CMA Foundation">CMA Foundation</option>
+        <option value="CMA Inter Group 1">CMA Inter Group 1</option>
+        <option value="CMA Inter Group 2">CMA Inter Group 2</option>
+        <option value="CMA Final Group 3">CMA Final Group 3</option>
+        <option value="CMA Final Group 4">CMA Final Group 4</option>
+      </select>
+
       <label for="referralCode">Referral Code (Optional)</label>
       <div style="display:flex;gap:8px">
         <input id="referralCode" type="text" placeholder="Enter referral code" style="margin-top:7px">
@@ -457,6 +467,7 @@ const applyReferral=document.getElementById("applyReferral");
 const referralMessage=document.getElementById("referralMessage");
 const finalAmount=document.getElementById("finalAmount");
 const discountInfo=document.getElementById("discountInfo");
+const attemptSelect=document.getElementById("attemptSelect");
 
 let selectedAmount=99;
 let referralDiscount=null;
@@ -567,9 +578,10 @@ function setSignedIn(user){
     googleBtn.style.display="none";
     logoutBtn.style.display="block";
 
-    payBtn.disabled=false;
-    utr.disabled=false;
-    submitBtn.disabled=false;
+    const ready=!!attemptSelect.value;
+    payBtn.disabled=!ready;
+    utr.disabled=!ready;
+    submitBtn.disabled=!ready;
     homeBtn.disabled=false;
   }else{
     loginStatus.textContent="You are not signed in.";
@@ -583,6 +595,18 @@ function setSignedIn(user){
     homeBtn.disabled=true;
   }
 }
+
+attemptSelect.addEventListener("change",function(){
+  const ready=!!attemptSelect.value && !!auth.currentUser;
+  payBtn.disabled=!ready;
+  utr.disabled=!ready;
+  submitBtn.disabled=!ready;
+  if(attemptSelect.value){
+    msg("Selected: "+attemptSelect.options[attemptSelect.selectedIndex].text);
+  }else{
+    msg("");
+  }
+});
 
 googleBtn.onclick=function(){
   googleBtn.disabled=true;
@@ -612,6 +636,11 @@ payBtn.onclick=function(){
     msg("Please sign in first.",true);
     return;
   }
+  if(!attemptSelect.value){
+    msg("Please select the CMA Group before making payment.",true);
+    attemptSelect.focus();
+    return;
+  }
   const x=calculate();
   if(x.payable<=0){
     msg("Payable amount must be greater than ₹0.",true);
@@ -628,6 +657,11 @@ submitBtn.onclick=function(){
 
   if(!user){
     msg("Please sign in first.",true);
+    return;
+  }
+  if(!attemptSelect.value){
+    msg("Please select the CMA Group before submitting payment details.",true);
+    attemptSelect.focus();
     return;
   }
   if(!transactionId){
