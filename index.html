@@ -324,8 +324,7 @@ footer strong{color:var(--teal)}
     <section class="card">
       <h2>💳 Get Portal Access</h2>
       <p>
-        Complete the payment, enter your UTR / Transaction ID and submit the
-        details for manual verification.
+        Choose an access plan, optionally apply a referral code, complete the payment, then enter your UTR / Transaction ID for manual verification.
       </p>
 
       <div class="price">
@@ -335,7 +334,6 @@ footer strong{color:var(--teal)}
           <button type="button" class="secondary amountBtn" data-amount="199">₹199</button>
           <button type="button" class="secondary amountBtn" data-amount="299">₹299</button>
         </div>
-        <input id="customAmount" type="number" min="1" step="1" placeholder="Or enter custom amount">
         <strong id="finalAmount">₹99</strong>
         <span id="discountInfo">Select a referral code below to get discount</span>
       </div>
@@ -347,7 +345,35 @@ footer strong{color:var(--teal)}
       </div>
       <div id="referralMessage" class="message"></div>
 
-      <div class="payment-area">
+      <div class="plan-options" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0;">
+  <button type="button" class="amountBtn secondary" data-amount="99" style="margin:0;padding:14px 6px;text-align:center;line-height:1.3;">
+    <span style="display:block;font-size:20px;font-weight:900;">₹99</span>
+    <span style="display:block;font-size:12px;font-weight:900;margin-top:4px;">MONTHLY</span>
+  </button>
+  <button type="button" class="amountBtn secondary" data-amount="199" style="margin:0;padding:14px 6px;text-align:center;line-height:1.3;">
+    <span style="display:block;font-size:20px;font-weight:900;">₹199</span>
+    <span style="display:block;font-size:12px;font-weight:900;margin-top:4px;">3 MONTHS</span>
+  </button>
+  <button type="button" class="amountBtn secondary" data-amount="299" style="margin:0;padding:14px 6px;text-align:center;line-height:1.3;">
+    <span style="display:block;font-size:20px;font-weight:900;">₹299</span>
+    <span style="display:block;font-size:12px;font-weight:900;margin-top:4px;">6 MONTHS</span>
+  </button>
+</div>
+
+<div class="price">
+  <small>Payable Amount</small>
+  <strong id="finalAmount">₹99</strong>
+  <span id="discountInfo">No referral discount applied</span>
+</div>
+
+<label for="referralCode">Referral Code (Optional)</label>
+<div style="display:flex;gap:8px;">
+  <input id="referralCode" type="text" placeholder="Enter referral code" style="margin-top:7px;">
+  <button id="applyReferral" class="secondary" style="width:auto;white-space:nowrap;margin-top:7px;">Apply</button>
+</div>
+<div id="referralMessage" class="message"></div>
+
+<div class="payment-area">
         <button id="payBtn" class="pay" disabled>
           💳 Pay ₹99 via UPI
         </button>
@@ -426,7 +452,6 @@ const userEmail=document.getElementById("userEmail");
 const message=document.getElementById("message");
 
 const amountButtons=document.querySelectorAll(".amountBtn");
-const customAmount=document.getElementById("customAmount");
 const referralCode=document.getElementById("referralCode");
 const applyReferral=document.getElementById("applyReferral");
 const referralMessage=document.getElementById("referralMessage");
@@ -440,11 +465,7 @@ let appliedReferralCode="";
 function money(n){
   return "₹"+Number(n||0).toFixed(2).replace(/\.00$/,"");
 }
-function getBaseAmount(){
-  const custom=Number(customAmount.value);
-  if(Number.isFinite(custom) && custom>0) return Math.round(custom*100)/100;
-  return selectedAmount;
-}
+function getBaseAmount(){ return selectedAmount; }
 function calculate(){
   const base=getBaseAmount();
   let discount=0;
@@ -471,11 +492,10 @@ function updatePrice(){
 amountButtons.forEach(btn=>{
   btn.onclick=()=>{
     selectedAmount=Number(btn.dataset.amount);
-    customAmount.value="";
     updatePrice();
   };
 });
-customAmount.oninput=updatePrice;
+ 
 
 applyReferral.onclick=async()=>{
   const code=referralCode.value.trim().toUpperCase();
@@ -506,9 +526,9 @@ applyReferral.onclick=async()=>{
       throw new Error("This referral code has expired.");
     }
 
-    const allowed=d.applicablePlans||["99","199","299","custom"];
+    const allowed=d.applicablePlans||["99","199","299"];
     const base=getBaseAmount();
-    const plan=customAmount.value ? "custom" : String(selectedAmount);
+    const plan=String(selectedAmount);
     if(!allowed.includes("all") && !allowed.includes(plan)){
       throw new Error("This code is not valid for the selected amount.");
     }
