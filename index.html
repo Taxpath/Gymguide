@@ -34,10 +34,71 @@ h2.section-title{font-size:18px;color:var(--teal-dark);border-left:4px solid var
 .hidden{display:none!important}
 footer{text-align:center;padding:24px;font-size:12.5px;color:#8a938f}
 @media(max-width:600px){main{padding:25px 14px 45px}.hero h1{font-size:26px}.user-area{width:100%;justify-content:space-between}}
+
+.payment-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:22px;
+  margin:26px 0;
+  box-shadow:0 2px 8px rgba(13,59,62,.05);
+}
+.payment-card h2{margin:0 0 8px;color:var(--teal);font-size:20px}
+.payment-card p{margin:7px 0;color:#5b6b69;font-size:14px;line-height:1.5}
+.pay-btn,.submit-btn{
+  display:inline-block;
+  border:0;
+  border-radius:9px;
+  padding:11px 18px;
+  font-weight:700;
+  cursor:pointer;
+  text-decoration:none;
+  font-size:14px;
+  margin-top:10px;
+}
+.pay-btn{background:var(--gold);color:var(--teal-dark)}
+.submit-btn{background:var(--teal);color:#fff}
+.payment-input{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  margin-top:8px;
+  font-size:14px;
+  outline:none;
+}
+.payment-input:focus{border-color:var(--gold)}
+.payment-note{font-size:12px!important;color:#777!important}
+#paymentStatus{margin-top:12px;font-size:13px;font-weight:600}
 </style></head><body>
 <div id="loadingScreen"><div class="spinner"></div><div id="loadingText">Checking sign-in status…</div></div>
 
-<div id="pageContent"><header class="topbar"><div class="brand">CMA<span>.</span> MCQ Portal</div></header><main><div class="hero"><h1>CMA</h1><p>MCQ Practice &amp; Full-Fledged Test</p></div><div class="access-card"><div class="access-title">Your Access</div><div id="accessTags" class="access-tags"></div><div id="expiryText" class="expiry"></div></div>
+<div id="pageContent"><header class="topbar"><div class="brand">CMA<span>.</span> MCQ Portal</div></header><main><div class="hero"><h1>CMA</h1><p>MCQ Practice &amp; Full-Fledged Test</p></div>
+<section class="payment-card" id="paymentSection">
+  <h2>🔐 Get Full Access</h2>
+  <p>Monthly access: <strong>₹100</strong></p>
+  <p>Pay ₹100 using UPI and then submit your UTR / Transaction ID below.</p>
+
+  <a class="pay-btn"
+     href="upi://pay?pa=8945889571-4@ybl&pn=CMA%20MCQ%20Portal&am=100&cu=INR">
+     💳 Pay ₹100 by UPI
+  </a>
+
+  <p style="margin-top:18px;"><strong>Already Paid?</strong> Enter your UTR / Transaction ID:</p>
+  <input id="utrInput" class="payment-input" type="text"
+         placeholder="Enter UTR / Transaction ID" maxlength="50"
+         autocomplete="off">
+
+  <button class="submit-btn" type="button" onclick="submitPayment()">
+    📤 Submit Payment Details
+  </button>
+
+  <div id="paymentStatus"></div>
+  <p class="payment-note">
+    Your payment will be verified manually. Access will be activated only after verification.
+  </p>
+</section>
+<div class="access-card"><div class="access-title">Your Access</div><div id="accessTags" class="access-tags"></div><div id="expiryText" class="expiry"></div></div>
 <section id="foundationContent" class="hidden"><h2 class="section-title">CMA Foundation — Subjects</h2><div class="grid"><a class="card" href="foundation/law-business-communication/index.html"><h3>Fundamentals of Law and Business Communication</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/financial-cost-accounting/index.html"><h3>Fundamentals of Financial and Cost Accounting</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/business-mathematics-statistics/index.html"><h3>Fundamentals of Business Mathematics and Statistics</h3><p>Subject MCQ practice</p></a><a class="card" href="foundation/business-economics-management/index.html"><h3>Fundamentals of Business Economics and Management</h3><p>Subject MCQ practice</p></a></div><h2 class="section-title">Full-Fledged Test</h2><div class="grid"><a class="card full-test" href="foundation/full-test/index.html"><h3>📝 Full-Fledged Test — CMA Foundation</h3><p>Combined test area</p></a></div></section>
 <!--CMA INTER GROUP 1 SUBJECT DETAILS-->
   
@@ -71,5 +132,30 @@ expiryText.textContent="Google authentication is disabled in this test version."
 });
 noContentMessage.classList.add("hidden");
 })();
+</script>
+
+<script>
+function submitPayment(){
+  const utr = document.getElementById("utrInput").value.trim();
+  const status = document.getElementById("paymentStatus");
+
+  if(!utr){
+    status.textContent = "Please enter your UTR / Transaction ID.";
+    return;
+  }
+
+  const message =
+    "CMA MCQ Portal - Payment Verification Request%0A%0A" +
+    "Amount: ₹100%0A" +
+    "UTR / Transaction ID: " + encodeURIComponent(utr) + "%0A" +
+    "Request: Please verify my payment and activate access.";
+
+  window.open(
+    "https://wa.me/917003872845?text=" + message,
+    "_blank"
+  );
+
+  status.textContent = "WhatsApp opened. Please send the prepared message to complete submission.";
+}
 </script>
 </body></html>
