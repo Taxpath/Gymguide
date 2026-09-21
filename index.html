@@ -329,14 +329,27 @@ footer strong{color:var(--teal)}
       </p>
 
       <div class="price">
-        <small>Monthly Access</small>
-        <strong>₹100</strong>
-        <span>Simple • Affordable • Student Friendly</span>
+        <small>Choose Access Amount</small>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0">
+          <button type="button" class="secondary amountBtn" data-amount="99">₹99</button>
+          <button type="button" class="secondary amountBtn" data-amount="199">₹199</button>
+          <button type="button" class="secondary amountBtn" data-amount="299">₹299</button>
+        </div>
+        <input id="customAmount" type="number" min="1" step="1" placeholder="Or enter custom amount">
+        <strong id="finalAmount">₹99</strong>
+        <span id="discountInfo">Select a referral code below to get discount</span>
       </div>
+
+      <label for="referralCode">Referral Code (Optional)</label>
+      <div style="display:flex;gap:8px">
+        <input id="referralCode" type="text" placeholder="Enter referral code" style="margin-top:7px">
+        <button type="button" id="applyReferral" class="secondary" style="width:auto;white-space:nowrap">Apply</button>
+      </div>
+      <div id="referralMessage" class="message"></div>
 
       <div class="payment-area">
         <button id="payBtn" class="pay" disabled>
-          💳 Pay ₹100 via UPI
+          💳 Pay ₹99 via UPI
         </button>
 
         <label for="utr">UTR / Transaction ID</label>
@@ -383,6 +396,7 @@ footer strong{color:var(--teal)}
 
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig={
   apiKey:"AIzaSyA7tGvsDYyYLSWFPeS6lsxlP8gLOw53Wrk",
@@ -397,6 +411,7 @@ const firebaseConfig={
 if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
 const auth=firebase.auth();
+const db=firebase.firestore();
 const provider=new firebase.auth.GoogleAuthProvider();
 provider.setCustomParameters({prompt:"select_account"});
 
@@ -409,6 +424,115 @@ const utr=document.getElementById("utr");
 const loginStatus=document.getElementById("loginStatus");
 const userEmail=document.getElementById("userEmail");
 const message=document.getElementById("message");
+
+const amountButtons=document.querySelectorAll(".amountBtn");
+const customAmount=document.getElementById("customAmount");
+const referralCode=document.getElementById("referralCode");
+const applyReferral=document.getElementById("applyReferral");
+const referralMessage=document.getElementById("referralMessage");
+const finalAmount=document.getElementById("finalAmount");
+const discountInfo=document.getElementById("discountInfo");
+
+let selectedAmount=99;
+let referralDiscount=null;
+let appliedReferralCode="";
+
+function money(n){
+  return "₹"+Number(n||0).toFixed(2).replace(/\.00$/,"");
+}
+function getBaseAmount(){
+  const custom=Number(customAmount.value);
+  if(Number.isFinite(custom) && custom>0) return Math.round(custom*100)/100;
+  return selectedAmount;
+}
+function calculate(){
+  const base=getBaseAmount();
+  let discount=0;
+  if(referralDiscount){
+    if(referralDiscount.discountType==="percent"){
+      discount=base*(Number(referralDiscount.discountValue)/100);
+    }else{
+      discount=Number(referralDiscount.discountValue);
+    }
+    discount=Math.min(Math.max(discount,0),base);
+  }
+  const payable=Math.max(0,base-discount);
+  return {base,discount,payable};
+}
+function updatePrice(){
+  const x=calculate();
+  finalAmount.textContent=money(x.payable);
+  discountInfo.textContent=x.discount>0
+    ? "Original: "+money(x.base)+" • Discount: "+money(x.discount)+" • Payable: "+money(x.payable)
+    : "No referral discount applied";
+  payBtn.textContent="💳 Pay "+money(x.payable)+" via UPI";
+}
+
+amountButtons.forEach(btn=>{
+  btn.onclick=()=>{
+    selectedAmount=Number(btn.dataset.amount);
+    customAmount.value="";
+    updatePrice();
+  };
+});
+customAmount.oninput=updatePrice;
+
+applyReferral.onclick=async()=>{
+  const code=referralCode.value.trim().toUpperCase();
+  if(!code){
+    referralDiscount=null;
+    appliedReferralCode="";
+    referralMessage.textContent="Enter a referral code.";
+    referralMessage.style.color="#b3261e";
+    updatePrice();
+    return;
+  }
+  if(!auth.currentUser){
+    referralMessage.textContent="Please sign in first.";
+    referralMessage.style.color="#b3261e";
+    return;
+  }
+  applyReferral.disabled=true;
+  try{
+    const snap=await db.collection("referralCodes").doc(code).get();
+    if(!snap.exists) throw new Error("Invalid referral code.");
+    const d=snap.data();
+
+    if(d.active!==true) throw new Error("This referral code is inactive.");
+    if(d.expiry && d.expiry.toDate && d.expiry.toDate().getTime()<Date.now()){
+      throw new Error("This referral code has expired.");
+    }
+    if(d.expiry && typeof d.expiry==="string" && new Date(d.expiry).getTime()<Date.now()){
+      throw new Error("This referral code has expired.");
+    }
+
+    const allowed=d.applicablePlans||["99","199","299","custom"];
+    const base=getBaseAmount();
+    const plan=customAmount.value ? "custom" : String(selectedAmount);
+    if(!allowed.includes("all") && !allowed.includes(plan)){
+      throw new Error("This code is not valid for the selected amount.");
+    }
+
+    const type=d.discountType==="fixed" ? "fixed" : "percent";
+    let value=Number(d.discountValue);
+    if(!Number.isFinite(value) || value<0) throw new Error("Invalid discount configuration.");
+    if(type==="percent" && value>100) value=100;
+
+    referralDiscount={discountType:type,discountValue:value};
+    appliedReferralCode=code;
+    referralMessage.textContent="Referral code applied successfully.";
+    referralMessage.style.color="#18794e";
+    updatePrice();
+  }catch(e){
+    referralDiscount=null;
+    appliedReferralCode="";
+    referralMessage.textContent=e.message||"Unable to apply referral code.";
+    referralMessage.style.color="#b3261e";
+    updatePrice();
+  }finally{
+    applyReferral.disabled=false;
+  }
+};
 
 function msg(text,error=false){
   message.textContent=text;
@@ -468,9 +592,14 @@ payBtn.onclick=function(){
     msg("Please sign in first.",true);
     return;
   }
-
+  const x=calculate();
+  if(x.payable<=0){
+    msg("Payable amount must be greater than ₹0.",true);
+    return;
+  }
   window.location.href=
-    "upi://pay?pa=8945889571-4@ybl&pn=CMA%20MCQ%20Portal&am=100&cu=INR";
+    "upi://pay?pa=8945889571-4@ybl&pn=CMA%20MCQ%20Portal&am="+
+    encodeURIComponent(x.payable.toFixed(2))+"&cu=INR";
 };
 
 submitBtn.onclick=function(){
@@ -481,17 +610,20 @@ submitBtn.onclick=function(){
     msg("Please sign in first.",true);
     return;
   }
-
   if(!transactionId){
     msg("Please enter your UTR / Transaction ID.",true);
     return;
   }
 
+  const x=calculate();
   const text =
     "CMA MCQ Portal - Payment Verification Request\n\n"+
     "Name: "+(user.displayName||"Not provided")+"\n"+
     "Email: "+(user.email||"")+"\n"+
-    "Amount: ₹100\n"+
+    "Original Amount: "+money(x.base)+"\n"+
+    "Referral Code: "+(appliedReferralCode||"None")+"\n"+
+    "Discount: "+money(x.discount)+"\n"+
+    "Final Amount: "+money(x.payable)+"\n"+
     "UTR / Transaction ID: "+transactionId+"\n\n"+
     "Please verify this payment and activate my portal access.";
 
@@ -500,6 +632,7 @@ submitBtn.onclick=function(){
 };
 
 homeBtn.onclick=function(){
+
   if(!auth.currentUser){
     msg("Please sign in first.",true);
     return;
@@ -511,6 +644,8 @@ homeBtn.onclick=function(){
   */
   window.location.href="home.html";
 };
+
+updatePrice();
 
 auth.onAuthStateChanged(function(user){
   setSignedIn(user);
