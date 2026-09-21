@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CMA MCQ Portal — Referral Admin</title>
+<style>
+body{margin:0;font-family:Arial,Segoe UI,sans-serif;background:#faf6ee;color:#22302f}
+.wrap{max-width:950px;margin:30px auto;padding:16px}
+.card{background:#fff;border:1px solid #e4dcc8;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 8px 25px rgba(13,59,62,.08)}
+h1,h2{color:#082627} label{display:block;margin-top:12px;font-weight:700;font-size:13px}
+input,select{width:100%;padding:12px;margin-top:6px;box-sizing:border-box;border:1px solid #d6cebb;border-radius:9px}
+button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;margin-top:12px}
+.primary{background:#c8a24a;color:#082627}.danger{background:#b3261e;color:#fff}.secondary{background:#fff;border:1px solid #d6cebb;color:#0d3b3e}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px}th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
+.badge{padding:4px 7px;border-radius:20px;background:#e9f2f1}.msg{margin-top:10px;font-size:13px}
+@media(max-width:650px){.row{grid-template-columns:1fr}table{font-size:11px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>Referral & Discount Admin</h1>
+<p id="status">Checking sign-in…</p>
+<div id="loginArea"><button id="login" class="primary">Continue with Google</button></div>
+<button id="logout" class="secondary" style="display:none">Sign out</button>
+<div id="app" style="display:none">
+<hr>
+<h2>Create / Update Referral Code</h2>
+<div class="row">
+<div><label>Referral Code</label><input id="code" placeholder="e.g. CMA10"></div>
+<div><label>Status</label><select id="active"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+</div>
+<div class="row">
+<div><label>Discount Type</label><select id="discountType"><option value="percent">Percentage (%)</option><option value="fixed">Fixed Amount (₹)</option></select></div>
+<div><label>Discount Value</label><input id="discountValue" type="number" min="0" step="0.01" placeholder="10"></div>
+</div>
+<label>Applicable Plans</label>
+<div class="actions">
+<label><input type="checkbox" class="plan" value="99" checked> ₹99</label>
+<label><input type="checkbox" class="plan" value="199" checked> ₹199</label>
+<label><input type="checkbox" class="plan" value="299" checked> ₹299</label>
+<label><input type="checkbox" class="plan" value="custom"> Custom</label>
+<label><input type="checkbox" class="plan" value="all"> All</label>
+</div>
+<label>Expiry (optional)</label>
+<input id="expiry" type="date">
+<div class="actions">
+<button id="save" class="primary">Save Referral Code</button>
+<button id="clear" class="secondary">Clear</button>
+</div>
+<div id="msg" class="msg"></div>
+
+<h2>Existing Referral Codes</h2>
+<table>
+<thead><tr><th>Code</th><th>Discount</th><th>Plans</th><th>Status</th><th>Expiry</th><th>Actions</th></tr></thead>
+<tbody id="codes"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig={
+  apiKey:"AIzaSyA7tGvsDYyYLSWFPeS6lsxlP8gLOw53Wrk",
+  authDomain:"cma-mcq-portal.firebaseapp.com",
+  projectId:"cma-mcq-portal",
+  storageBucket:"cma-mcq-portal.firebasestorage.app",
+  messagingSenderId:"734935438365",
+  appId:"1:734935438365:web:40ea0a7677ef572234a2f4",
+  measurementId:"G-H6GDK7Y3RJ"
+};
+if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(), db=firebase.firestore();
+const provider=new firebase.auth.GoogleAuthProvider();
+provider.setCustomParameters({prompt:"select_account"});
+
+const $=id=>document.getElementById(id);
+function msg(t,e=false){$("msg").textContent=t;$("msg").style.color=e?"#b3261e":"#18794e";}
+$("login").onclick=()=>auth.signInWithPopup(provider).catch(e=>msg(e.message,true));
+$("logout").onclick=()=>auth.signOut();
+
+function selectedPlans(){
+  return [...document.querySelectorAll(".plan:checked")].map(x=>x.value);
+}
+function clearForm(){
+  $("code").value="";$("discountValue").value="";$("expiry").value="";
+  $("discountType").value="percent";$("active").value="true";
+  document.querySelectorAll(".plan").forEach(x=>x.checked=["99","199","299","custom"].includes(x.value));
+}
+async function saveCode(){
+  const code=$("code").value.trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"");
+  const type=$("discountType").value;
+  const value=Number($("discountValue").value);
+  const plans=selectedPlans();
+  if(!code)return msg("Enter a referral code.",true);
+  if(!Number.isFinite(value)||value<0)return msg("Enter a valid discount value.",true);
+  if(type==="percent"&&value>100)return msg("Percentage discount cannot exceed 100%.",true);
+  if(!plans.length)return msg("Select at least one applicable plan.",true);
+
+  const data={
+    active:$("active").value==="true",
+    discountType:type,
+    discountValue:value,
+    applicablePlans:plans,
+    expiry:$("expiry").value||null,
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy:auth.currentUser.uid
+  };
+  try{
+    await db.collection("referralCodes").doc(code).set(data,{merge:true});
+    msg("Referral code saved: "+code);
+    clearForm();loadCodes();
+  }catch(e){msg(e.message||"Save failed.",true);}
+}
+async function loadCodes(){
+  const body=$("codes"); body.innerHTML="";
+  try{
+    const snap=await db.collection("referralCodes").orderBy("updatedAt","desc").get();
+    snap.forEach(doc=>{
+      const d=doc.data(), tr=document.createElement("tr");
+      const expiry=d.expiry && d.expiry.toDate ? d.expiry.toDate().toLocaleDateString("en-IN") : (d.expiry||"—");
+      tr.innerHTML=
+        "<td><b>"+doc.id+"</b></td>"+
+        "<td>"+(d.discountType==="fixed"?"₹"+d.discountValue:d.discountValue+"%")+"</td>"+
+        "<td>"+(d.applicablePlans||[]).join(", ")+"</td>"+
+        "<td><span class='badge'>"+(d.active?"Active":"Inactive")+"</span></td>"+
+        "<td>"+expiry+"</td>"+
+        "<td><button class='secondary' data-edit='"+doc.id+"'>Edit</button> <button class='danger' data-delete='"+doc.id+"'>Delete</button></td>";
+      body.appendChild(tr);
+    });
+    body.querySelectorAll("[data-delete]").forEach(b=>b.onclick=async()=>{
+      if(confirm("Delete "+b.dataset.delete+"?")){
+        await db.collection("referralCodes").doc(b.dataset.delete).delete();loadCodes();
+      }
+    });
+    body.querySelectorAll("[data-edit]").forEach(b=>b.onclick=async()=>{
+      const d=(await db.collection("referralCodes").doc(b.dataset.edit).get()).data();
+      $("code").value=b.dataset.edit;$("active").value=String(d.active!==false);
+      $("discountType").value=d.discountType||"percent";$("discountValue").value=d.discountValue||0;
+      $("expiry").value=d.expiry||"";
+      document.querySelectorAll(".plan").forEach(x=>x.checked=(d.applicablePlans||[]).includes(x.value));
+      window.scrollTo({top:0,behavior:"smooth"});
+    });
+  }catch(e){msg(e.message||"Could not load codes.",true);}
+}
+$("save").onclick=saveCode;$("clear").onclick=clearForm;
+
+auth.onAuthStateChanged(async user=>{
+  $("loginArea").style.display=user?"none":"block";
+  $("logout").style.display=user?"block":"none";
+  if(!user){$("status").textContent="Sign in with an authorized admin Google account.";$("app").style.display="none";return;}
+  try{
+    const a=await db.collection("admins").doc(user.uid).get();
+    if(!a.exists || a.data().role!=="admin"){
+      $("status").textContent="This Google account is not authorized as admin.";
+      $("app").style.display="none"; return;
+    }
+    $("status").textContent="Admin: "+(user.email||user.uid);
+    $("app").style.display="block";loadCodes();
+  }catch(e){$("status").textContent=e.message;$("app").style.display="none";}
+});
+</script>
+</body>
+</html>
