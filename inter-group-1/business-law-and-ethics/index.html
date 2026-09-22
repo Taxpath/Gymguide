@@ -221,6 +221,8 @@ function setFreeSubjectUI(){
 
  $('qCount').textContent=FREE_MCQ_LIMIT;
  $('mCount').textContent='1';
+ $('qDown').disabled=false;
+ $('qUp').disabled=false;
  $('instant').checked=true;
  $('instant').disabled=true;
  $('random').checked=false;
@@ -230,8 +232,8 @@ function setFreeSubjectUI(){
  $('questionTimeRow').style.display='none';
  $('roundTimeRow').style.display='none';
 
- $('qDown').disabled=true;
- $('qUp').disabled=true;
+ $('qDown').disabled=false;
+ $('qUp').disabled=false;
  $('mDown').disabled=true;
  $('mUp').disabled=true;
  $('sDown').disabled=true;
@@ -256,8 +258,14 @@ function setupEvents(){
  $('returnPlanBtn').onclick=hideSubscriptionPopup;
  $('chapterSelect').onchange=()=>{updateChapterCount();updateRoundDesc()};
  $('attemptSelect').onchange=updateAttempt;
- $('qDown').onclick=()=>step('questions',-5,5,selectedMaxQuestions(),()=> $('qCount').textContent=cfg.questions);
- $('qUp').onclick=()=>step('questions',5,5,selectedMaxQuestions(),()=> $('qCount').textContent=cfg.questions);
+ $('qDown').onclick=()=>{
+   const max = CMA_FREE_MODE ? FREE_MCQ_LIMIT : selectedMaxQuestions();
+   step('questions',-5,5,max,()=> $('qCount').textContent=cfg.questions);
+ };
+ $('qUp').onclick=()=>{
+   const max = CMA_FREE_MODE ? FREE_MCQ_LIMIT : selectedMaxQuestions();
+   step('questions',5,5,max,()=> $('qCount').textContent=cfg.questions);
+ };
  $('mDown').onclick=()=>step('marks',-1,1,5,()=> $('mCount').textContent=cfg.marks);$('mUp').onclick=()=>step('marks',1,1,5,()=> $('mCount').textContent=cfg.marks);
  $('sDown').onclick=()=>step('seconds',-5,15,180,()=> $('sCount').textContent=cfg.seconds);$('sUp').onclick=()=>step('seconds',5,15,180,()=> $('sCount').textContent=cfg.seconds);
  $('instant').onchange=e=>cfg.instant=e.target.checked;$('random').onchange=e=>cfg.random=e.target.checked;
@@ -271,20 +279,10 @@ function setupEvents(){
 async function startRound(mode){
  clearInterval(interval);
 
- // Free users always get the same first 30 MCQ Bank questions.
- // Paid/admin users keep the original full functionality.
- if(window.CMAAccess){
-   try{
-     CMA_ACCESS_STATUS=await CMAAccess.getAccessStatus();
-     CMA_FREE_MODE=!(CMA_ACCESS_STATUS && (CMA_ACCESS_STATUS.isPaid===true || CMA_ACCESS_STATUS.isAdmin===true));
-   }catch(accessError){
-     console.warn('Access check failed; starting in safe free mode.',accessError);
-     CMA_ACCESS_STATUS=null;
-     CMA_FREE_MODE=true;
-   }
- }else{
-   // Never block the practice button if the optional access-control file
-   // has not loaded yet. Default safely to the fixed free 30-question mode.
+ // Access is initialized once when the page loads. Do not wait for
+ // another Firestore request every time the Start button is clicked.
+ // If access-control is unavailable, safely use the free mode.
+ if(!window.CMAAccess && !CMA_ACCESS_STATUS){
    CMA_FREE_MODE=true;
  }
 
@@ -303,15 +301,16 @@ async function startRound(mode){
 
    base=QUESTIONS
      .filter(q=>q && q.source==='bank' && Number(q.id)>=1 && Number(q.id)<=FREE_MCQ_LIMIT)
-     .sort((a,b)=>Number(a.id)-Number(b.id))
-     .slice(0,FREE_MCQ_LIMIT);
+     .sort((a,b)=>Number(a.id)-Number(b.id));
 
-   cfg.questions=FREE_MCQ_LIMIT;
+   // Respect the user's selected question count from 5 to 30.
+   // The same fixed questions are used in the same order every time.
+   cfg.questions=Math.max(5,Math.min(FREE_MCQ_LIMIT,Number(cfg.questions)||FREE_MCQ_LIMIT));
    cfg.random=false;
    cfg.timer='off';
    cfg.instant=true;
    cfg.marks=1;
-   $('qCount').textContent=FREE_MCQ_LIMIT;
+   $('qCount').textContent=cfg.questions;
    $('mCount').textContent='1';
  }else{
    base=sourceQuestions();
@@ -332,7 +331,12 @@ async function startRound(mode){
    if(cfg.random)shuffle(base);
  }
 
- pool=base.slice(0,Math.min(cfg.questions,base.length));
+ if(CMA_FREE_MODE && Number(cfg.questions)>FREE_MCQ_LIMIT){
+   showSubscriptionPopup('If you want to attempt more than 30 questions, please take a Subscription Plan.');
+   return;
+ }
+
+ pool=base.slice(0,Math.min(Number(cfg.questions)||FREE_MCQ_LIMIT,base.length));
  answers=pool.map(()=>null);
  roundResults=[];
  index=0;
