@@ -401,6 +401,20 @@ footer strong{color:var(--teal)}
           💳 Pay ₹99 via UPI
         </button>
 
+        <label for="customerName">Name</label>
+        <input id="customerName" type="text" placeholder="Enter your full name" autocomplete="name" disabled>
+
+        <label for="customerPhone">Phone Number</label>
+        <input id="customerPhone" type="tel" inputmode="numeric" maxlength="10"
+               placeholder="Enter your 10-digit phone number" autocomplete="tel" disabled>
+
+        <label for="attemptSelect">Exam Attempt</label>
+        <select id="attemptSelect" disabled style="width:100%;margin-top:7px;padding:13px;border:1px solid #d6cebb;border-radius:10px;outline:none;font-size:14px;background:#fff;">
+          <option value="">Select exam attempt</option>
+          <option value="December 2026">December 2026</option>
+          <option value="June 2027">June 2027</option>
+        </select>
+
         <label for="utr">UTR / Transaction ID</label>
         <input id="utr" type="text" placeholder="Enter your UTR / Transaction ID" disabled>
 
@@ -469,6 +483,9 @@ const logoutBtn=document.getElementById("logoutBtn");
 const payBtn=document.getElementById("payBtn");
 const submitBtn=document.getElementById("submitBtn");
 const homeBtn=document.getElementById("homeBtn");
+const customerName=document.getElementById("customerName");
+const customerPhone=document.getElementById("customerPhone");
+const attemptSelect=document.getElementById("attemptSelect");
 const utr=document.getElementById("utr");
 const loginStatus=document.getElementById("loginStatus");
 const userEmail=document.getElementById("userEmail");
@@ -613,6 +630,9 @@ function setSignedIn(user){
 
     const ready=getGroupCount()>0;
     payBtn.disabled=!ready;
+    customerName.disabled=!ready;
+    customerPhone.disabled=!ready;
+    attemptSelect.disabled=!ready;
     utr.disabled=!ready;
     submitBtn.disabled=!ready;
     homeBtn.disabled=false;
@@ -623,6 +643,9 @@ function setSignedIn(user){
     logoutBtn.style.display="none";
 
     payBtn.disabled=true;
+    customerName.disabled=true;
+    customerPhone.disabled=true;
+    attemptSelect.disabled=true;
     utr.disabled=true;
     submitBtn.disabled=true;
     homeBtn.disabled=true;
@@ -634,6 +657,9 @@ groupChecks.forEach(function(check){
     const count=getGroupCount();
     const ready=count>0 && !!auth.currentUser;
     payBtn.disabled=!ready;
+    customerName.disabled=!ready;
+    customerPhone.disabled=!ready;
+    attemptSelect.disabled=!ready;
     utr.disabled=!ready;
     submitBtn.disabled=!ready;
 
@@ -692,27 +718,58 @@ payBtn.onclick=function(){
 
 submitBtn.onclick=function(){
   const user=auth.currentUser;
+  const name=customerName.value.trim();
+  const phone=customerPhone.value.replace(/\D/g,"");
+  const attempt=attemptSelect.value;
   const transactionId=utr.value.trim();
 
   if(!user){
     msg("Please sign in first.",true);
     return;
   }
+
   if(getGroupCount()===0){
     msg("Please select at least one CMA Group before submitting payment details.",true);
     return;
   }
+
+  if(!name){
+    msg("Please enter your name.",true);
+    customerName.focus();
+    return;
+  }
+
+  if(!/^[6-9]\d{9}$/.test(phone)){
+    msg("Please enter a valid 10-digit Indian phone number.",true);
+    customerPhone.focus();
+    return;
+  }
+
+  if(!attempt){
+    msg("Please select your exam attempt.",true);
+    attemptSelect.focus();
+    return;
+  }
+
   if(!transactionId){
     msg("Please enter your UTR / Transaction ID.",true);
+    utr.focus();
     return;
   }
 
   const x=calculate();
+  const planMonths = selectedAmount===99 ? "1 Month" :
+                     selectedAmount===199 ? "3 Months" :
+                     selectedAmount===299 ? "6 Months" : "Custom";
+
   const text =
     "CMA MCQ Portal - Payment Verification Request\n\n"+
-    "Name: "+(user.displayName||"Not provided")+"\n"+
-    "Email: "+(user.email||"")+"\n"+
-    "Course / Group: "+(attemptSelect.value||"Not selected")+"\n"+
+    "Name: "+name+"\n"+
+    "Phone Number: +91 "+phone+"\n"+
+    "Email ID: "+(user.email||"Not provided")+"\n"+
+    "Course / Group: "+(getSelectedGroupText()||"Not selected")+"\n"+
+    "Plan Duration: "+planMonths+"\n"+
+    "Exam Attempt: "+attempt+"\n"+
     "Original Amount: "+money(x.base)+"\n"+
     "Referral Code: "+(appliedReferralCode||"None")+"\n"+
     "Discount: "+money(x.discount)+"\n"+
@@ -720,10 +777,9 @@ submitBtn.onclick=function(){
     "UTR / Transaction ID: "+transactionId+"\n\n"+
     "Please verify this payment and activate my portal access.";
 
-  window.location.href=
-    "https://wa.me/917003872845?text="+encodeURIComponent(text);
+  const waUrl="https://wa.me/917003872845?text="+encodeURIComponent(text);
+  window.open(waUrl,"_blank");
 };
-
 homeBtn.onclick=function(){
 
   if(!auth.currentUser){
