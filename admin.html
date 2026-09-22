@@ -40,6 +40,20 @@ th{background:#f7f3e9;color:var(--teal-dark)}
 .export.pdf{background:#a33a32}
 .export:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:700px){.export{flex:1;min-width:105px}}
+.access-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:18px}
+.access-grid label{font-size:12px;font-weight:800;color:var(--teal-dark);display:block;margin-bottom:6px}
+.access-grid input,.access-grid select{width:100%;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}
+.access-actions{display:flex;gap:10px;flex-wrap:wrap;padding:0 18px 18px}
+.grant{background:var(--teal);color:#fff}
+.secondary{background:#f1eadb;color:var(--teal-dark)}
+.access-table{overflow:auto}
+.access-table table{min-width:1050px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}
+.badge.active{background:#e4f3e8;color:#177245}
+.badge.expired{background:#f5e1de;color:#a33a32}
+.badge.revoked{background:#eee;color:#666}
+.access-note{padding:0 18px 15px;color:#687572;font-size:12px;line-height:1.5}
+
 
 .link-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin:0 0 22px}
 .link-stat{background:#fff;border:1px solid var(--border);border-radius:14px;padding:18px}
@@ -85,6 +99,82 @@ th{background:#f7f3e9;color:var(--teal-dark)}
       <div class="link-stat"><b id="todayClicks">0</b><span>Today's Clicks</span></div>
       <div class="link-stat"><b id="weekClicks">0</b><span>This Week's Clicks</span></div>
       <div class="link-stat"><b id="lastClick">—</b><span>Last Click</span></div>
+    </div>
+  </section>
+
+
+  <section class="panel">
+    <h2>🔐 Student Access Management</h2>
+    <div class="access-note">
+      Grant or revoke paid access for a student. The access is saved in the Firestore
+      <b>approvedUsers</b> collection used by the portal access-control system.
+    </div>
+
+    <div class="access-grid">
+      <div>
+        <label for="accessEmail">Student Email</label>
+        <input id="accessEmail" type="email" placeholder="student@example.com">
+      </div>
+
+      <div>
+        <label for="accessName">Student Name</label>
+        <input id="accessName" type="text" placeholder="Student name">
+      </div>
+
+      <div>
+        <label for="accessGroup">Group</label>
+        <select id="accessGroup">
+          <option value="CMA Foundation">CMA Foundation</option>
+          <option value="CMA Inter Group 1">CMA Inter Group 1</option>
+          <option value="CMA Inter Group 2">CMA Inter Group 2</option>
+          <option value="CMA Final Group 3">CMA Final Group 3</option>
+          <option value="CMA Final Group 4">CMA Final Group 4</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="accessPlan">Plan</label>
+        <select id="accessPlan">
+          <option value="Monthly">Monthly — ₹99</option>
+          <option value="3 Months">3 Months — ₹199</option>
+          <option value="6 Months">6 Months — ₹299</option>
+          <option value="Custom">Custom</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="accessStart">Start Date</label>
+        <input id="accessStart" type="date">
+      </div>
+
+      <div>
+        <label for="accessExpiry">Expiry Date</label>
+        <input id="accessExpiry" type="date">
+      </div>
+    </div>
+
+    <div class="access-actions">
+      <button class="grant" id="grantAccessBtn">✓ Grant / Update Access</button>
+      <button class="secondary" id="clearAccessFormBtn">Clear</button>
+      <button class="refresh" id="refreshAccessBtn">Refresh Access List</button>
+    </div>
+
+    <div class="table-wrap access-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Group</th>
+            <th>Plan</th>
+            <th>Start Date</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="accessBody"></tbody>
+      </table>
     </div>
   </section>
 
@@ -153,6 +243,7 @@ const adminEmail=document.getElementById("adminEmail");
 const usersBody=document.getElementById("usersBody");
 const loginsBody=document.getElementById("loginsBody");
 let users=[],logins=[];
+let approvedUsers=[];
 
 function norm(v){return(v||"").toString().trim().toLowerCase();}
 function fmt(ts){
@@ -358,6 +449,201 @@ function exportUsersPdf(){
   doc.save("CMA_User_Activity_"+exportFileDate()+".pdf");
 }
 
+
+  const accessBody=document.getElementById("accessBody");
+
+  function dateOnly(v){
+    if(!v)return "";
+    if(typeof v==="string")return v.slice(0,10);
+    if(v.toDate){
+      const d=v.toDate();
+      return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    }
+    const d=new Date(v);
+    if(isNaN(d))return "";
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+
+  function todayISO(){
+    const d=new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+
+  function addMonthsISO(dateStr,months){
+    const d=new Date(dateStr+"T00:00:00");
+    d.setMonth(d.getMonth()+months);
+    return dateOnly(d);
+  }
+
+  function accessStatus(x){
+    if(x.revoked===true)return "revoked";
+    if(!x.expiryDate)return "expired";
+    const expiry=dateOnly(x.expiryDate);
+    return expiry>=todayISO() ? "active" : "expired";
+  }
+
+  function accessStatusLabel(status){
+    if(status==="active")return '<span class="badge active">ACTIVE</span>';
+    if(status==="revoked")return '<span class="badge revoked">REVOKED</span>';
+    return '<span class="badge expired">EXPIRED</span>';
+  }
+
+  async function loadApprovedUsers(){
+    const snap=await db.collection("approvedUsers").get();
+    approvedUsers=snap.docs.map(d=>({
+      id:d.id,
+      ...d.data()
+    }));
+    renderApprovedUsers();
+  }
+
+  function renderApprovedUsers(){
+    const rows=[...approvedUsers].sort((a,b)=>{
+      return String(a.email||"").localeCompare(String(b.email||""));
+    });
+
+    accessBody.innerHTML=rows.map(x=>{
+      const status=accessStatus(x);
+      const email=htmlmod.escape ? htmlmod.escape(x.email||"") : String(x.email||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+      const name=String(x.displayName||x.name||"—").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+      const group=String(x.group||x.course||x.accessGroup||"—").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+      const plan=String(x.plan||"—").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+
+      return `<tr>
+        <td>${name}</td>
+        <td>${email}</td>
+        <td>${group}</td>
+        <td>${plan}</td>
+        <td>${dateOnly(x.startDate)||"—"}</td>
+        <td>${dateOnly(x.expiryDate)||"—"}</td>
+        <td>${accessStatusLabel(status)}</td>
+        <td>
+          <button class="secondary" onclick="window.editApprovedUser(${JSON.stringify(x.id)})">Edit</button>
+          <button class="danger" onclick="window.revokeApprovedUser(${JSON.stringify(x.id)})">Revoke</button>
+        </td>
+      </tr>`;
+    }).join("") || '<tr><td colspan="8" class="empty">No approved users found.</td></tr>';
+  }
+
+  function clearAccessForm(){
+    document.getElementById("accessEmail").value="";
+    document.getElementById("accessName").value="";
+    document.getElementById("accessGroup").value="CMA Foundation";
+    document.getElementById("accessPlan").value="Monthly";
+    document.getElementById("accessStart").value=todayISO();
+    document.getElementById("accessExpiry").value=addMonthsISO(todayISO(),1);
+  }
+
+  function updateExpiryFromPlan(){
+    const start=document.getElementById("accessStart").value||todayISO();
+    const plan=document.getElementById("accessPlan").value;
+    document.getElementById("accessStart").value=start;
+
+    if(plan==="Monthly")document.getElementById("accessExpiry").value=addMonthsISO(start,1);
+    else if(plan==="3 Months")document.getElementById("accessExpiry").value=addMonthsISO(start,3);
+    else if(plan==="6 Months")document.getElementById("accessExpiry").value=addMonthsISO(start,6);
+  }
+
+  async function grantAccess(){
+    const email=norm(document.getElementById("accessEmail").value);
+    const name=document.getElementById("accessName").value.trim();
+    const group=document.getElementById("accessGroup").value;
+    const plan=document.getElementById("accessPlan").value;
+    const startDate=document.getElementById("accessStart").value;
+    const expiryDate=document.getElementById("accessExpiry").value;
+
+    if(!email){
+      alert("Please enter the student's email.");
+      return;
+    }
+    if(!startDate||!expiryDate){
+      alert("Please select start and expiry dates.");
+      return;
+    }
+    if(expiryDate<startDate){
+      alert("Expiry date cannot be before the start date.");
+      return;
+    }
+
+    const btn=document.getElementById("grantAccessBtn");
+    btn.disabled=true;
+
+    try{
+      const ref=db.collection("approvedUsers").doc(email);
+      const old=await ref.get();
+
+      const data={
+        email,
+        displayName:name,
+        name:name,
+        group,
+        accessGroup:group,
+        plan,
+        startDate,
+        expiryDate,
+        status:"active",
+        revoked:false,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if(!old.exists){
+        data.createdAt=firebase.firestore.FieldValue.serverTimestamp();
+      }
+
+      await ref.set(data,{merge:true});
+
+      alert("Access granted successfully for "+email);
+      await loadApprovedUsers();
+      clearAccessForm();
+    }catch(e){
+      console.error(e);
+      alert("Could not save access: "+(e.message||e));
+    }finally{
+      btn.disabled=false;
+    }
+  }
+
+  window.editApprovedUser=async function(id){
+    const x=approvedUsers.find(u=>u.id===id);
+    if(!x)return;
+
+    document.getElementById("accessEmail").value=x.email||"";
+    document.getElementById("accessName").value=x.displayName||x.name||"";
+    document.getElementById("accessGroup").value=x.group||x.course||x.accessGroup||"CMA Foundation";
+    document.getElementById("accessPlan").value=x.plan||"Custom";
+    document.getElementById("accessStart").value=dateOnly(x.startDate)||todayISO();
+    document.getElementById("accessExpiry").value=dateOnly(x.expiryDate)||"";
+
+    document.getElementById("accessEmail").focus();
+    window.scrollTo({top:document.getElementById("accessEmail").getBoundingClientRect().top+window.scrollY-100,behavior:"smooth"});
+  };
+
+  window.revokeApprovedUser=async function(id){
+    const x=approvedUsers.find(u=>u.id===id);
+    if(!x)return;
+
+    if(!confirm("Revoke access for "+(x.email||id)+"?"))return;
+
+    try{
+      await db.collection("approvedUsers").doc(id).set({
+        status:"revoked",
+        revoked:true,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      },{merge:true});
+
+      await loadApprovedUsers();
+    }catch(e){
+      console.error(e);
+      alert("Could not revoke access: "+(e.message||e));
+    }
+  };
+
+  document.getElementById("grantAccessBtn").onclick=grantAccess;
+  document.getElementById("clearAccessFormBtn").onclick=clearAccessForm;
+  document.getElementById("refreshAccessBtn").onclick=()=>loadApprovedUsers();
+  document.getElementById("accessPlan").onchange=updateExpiryFromPlan;
+  document.getElementById("accessStart").onchange=updateExpiryFromPlan;
+
 loginBtn.onclick=async()=>{
   loginBtn.disabled=true;
   showMsg("Signing in…");
@@ -399,6 +685,8 @@ auth.onAuthStateChanged(async user=>{
   try{
     await loadData();
     await loadAnalytics();
+    await loadApprovedUsers();
+    clearAccessForm();
   }catch(e){
     console.error(e);
     alert("Could not load login data. Check Firestore Rules for loginEvents and portalUsers.");
