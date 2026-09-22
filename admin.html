@@ -244,6 +244,7 @@ const usersBody=document.getElementById("usersBody");
 const loginsBody=document.getElementById("loginsBody");
 let users=[],logins=[];
 let approvedUsers=[];
+let editingAccessEmail="";
 
 function norm(v){return(v||"").toString().trim().toLowerCase();}
 function fmt(ts){
@@ -518,15 +519,21 @@ function exportUsersPdf(){
         <td>${dateOnly(x.expiryDate)||"—"}</td>
         <td>${accessStatusLabel(status)}</td>
         <td>
-          <button class="secondary" onclick="window.editApprovedUser(${JSON.stringify(x.id)})">Edit</button>
-          <button class="danger" onclick="window.revokeApprovedUser(${JSON.stringify(x.id)})">Revoke</button>
+          <button class="secondary" onclick="window.editApprovedUser(${JSON.stringify(String(x.id))})">Edit</button>
+          <button class="danger" onclick="window.revokeApprovedUser(${JSON.stringify(String(x.id))})">Revoke</button>
         </td>
       </tr>`;
     }).join("") || '<tr><td colspan="8" class="empty">No approved users found.</td></tr>';
   }
 
   function clearAccessForm(){
-    document.getElementById("accessEmail").value="";
+    editingAccessEmail="";
+    const emailEl=document.getElementById("accessEmail");
+    emailEl.value="";
+    emailEl.disabled=false;
+    emailEl.style.background="";
+    emailEl.title="";
+    document.getElementById("grantAccessBtn").textContent="✓ Grant / Update Access";
     document.getElementById("accessName").value="";
     document.getElementById("accessGroup").value="CMA Foundation";
     document.getElementById("accessPlan").value="Monthly";
@@ -545,7 +552,8 @@ function exportUsersPdf(){
   }
 
   async function grantAccess(){
-    const email=norm(document.getElementById("accessEmail").value);
+    const emailEl=document.getElementById("accessEmail");
+    const email=norm(emailEl.value);
     const name=document.getElementById("accessName").value.trim();
     const group=document.getElementById("accessGroup").value;
     const plan=document.getElementById("accessPlan").value;
@@ -569,17 +577,19 @@ function exportUsersPdf(){
     btn.disabled=true;
 
     try{
-      const ref=db.collection("approvedUsers").doc(email);
+      // When editing, keep the original document ID/email. This prevents
+      // accidentally creating a second access record if the email is changed.
+      const docEmail=editingAccessEmail||email;
+      const ref=db.collection("approvedUsers").doc(docEmail);
       const old=await ref.get();
 
       const data={
-        email,
+        email:docEmail,
         displayName:name,
         name:name,
         group,
         accessGroup:group,
 
-        // Group-specific access flags used by access-control.js
         accessFoundation: group==="CMA Foundation",
         accessInterGroup1: group==="CMA Inter Group 1",
         accessInterGroup2: group==="CMA Inter Group 2",
@@ -600,7 +610,7 @@ function exportUsersPdf(){
 
       await ref.set(data,{merge:true});
 
-      alert("Access granted successfully for "+email);
+      alert((editingAccessEmail?"Access updated successfully for ":"Access granted successfully for ")+docEmail);
       await loadApprovedUsers();
       clearAccessForm();
     }catch(e){
@@ -612,37 +622,61 @@ function exportUsersPdf(){
   }
 
   window.editApprovedUser=async function(id){
-    const x=approvedUsers.find(u=>u.id===id);
-    if(!x)return;
+    const x=approvedUsers.find(u=>String(u.id)===String(id));
+    if(!x){
+      alert("Access record not found. Please refresh the Access List.");
+      return;
+    }
 
-    document.getElementById("accessEmail").value=x.email||"";
+    editingAccessEmail=norm(x.email||x.id||"");
+
+    const emailEl=document.getElementById("accessEmail");
+    emailEl.value=x.email||x.id||"";
+    emailEl.disabled=true;
+    emailEl.style.background="#f3efe5";
+    emailEl.title="Email is locked while editing this access record.";
+
     document.getElementById("accessName").value=x.displayName||x.name||"";
     document.getElementById("accessGroup").value=x.group||x.course||x.accessGroup||"CMA Foundation";
     document.getElementById("accessPlan").value=x.plan||"Custom";
     document.getElementById("accessStart").value=dateOnly(x.startDate)||todayISO();
     document.getElementById("accessExpiry").value=dateOnly(x.expiryDate)||"";
+    document.getElementById("grantAccessBtn").textContent="✓ Save Changes";
 
-    document.getElementById("accessEmail").focus();
+    document.getElementById("accessName").focus();
     window.scrollTo({top:document.getElementById("accessEmail").getBoundingClientRect().top+window.scrollY-100,behavior:"smooth"});
   };
 
   window.revokeApprovedUser=async function(id){
-    const x=approvedUsers.find(u=>u.id===id);
-    if(!x)return;
+    const x=approvedUsers.find(u=>String(u.id)===String(id));
+    if(!x){
+      alert("Access record not found. Please refresh the Access List.");
+      return;
+    }
 
     if(!confirm("Revoke access for "+(x.email||id)+"?"))return;
 
     try{
-      await db.collection("approvedUsers").doc(id).set({
+      const ref=db.collection("approvedUsers").doc(String(id));
+      await ref.set({
         status:"revoked",
         revoked:true,
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
       },{merge:true});
 
+      // Update the local table immediately, then sync from Firestore.
+      approvedUsers=approvedUsers.map(u=>String(u.id)===String(id)
+        ? {...u,status:"revoked",revoked:true}
+        : u);
+      renderApprovedUsers();
       await loadApprovedUsers();
+
+      if(String(editingAccessEmail)===String(norm(x.email||id))){
+        clearAccessForm();
+      }
     }catch(e){
-      console.error(e);
-      alert("Could not revoke access: "+(e.message||e));
+      console.error("Revoke access failed:",e);
+      alert("Could not revoke access: "+(e.code||e.message||e));
     }
   };
 
