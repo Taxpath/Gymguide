@@ -45,7 +45,7 @@ th{background:#f7f3e9;color:var(--teal-dark)}
 .access-grid input,.access-grid select{width:100%;min-width:0;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text)}
 .access-actions{display:flex;gap:10px;flex-wrap:wrap;padding:0 18px 18px}
 .grant{background:var(--teal);color:#fff}
-.secondary{background:#f1eadb;color:var(--teal-dark)}
+.secondary{background:#f1eadb;color:var(--teal-dark)}.danger{background:#a33a32;color:#fff}
 .access-table{overflow:auto}
 .access-table table{min-width:1050px}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}
@@ -519,8 +519,8 @@ function exportUsersPdf(){
         <td>${dateOnly(x.expiryDate)||"—"}</td>
         <td>${accessStatusLabel(status)}</td>
         <td>
-          <button class="secondary" onclick="window.editApprovedUser(${JSON.stringify(String(x.id))})">Edit</button>
-          <button class="danger" onclick="window.revokeApprovedUser(${JSON.stringify(String(x.id))})">Revoke</button>
+          <button type="button" class="secondary access-edit-btn" data-id="${esc(String(x.id))}">Edit</button>
+          <button type="button" class="danger access-revoke-btn" data-id="${esc(String(x.id))}">Revoke</button>
         </td>
       </tr>`;
     }).join("") || '<tr><td colspan="8" class="empty">No approved users found.</td></tr>';
@@ -685,6 +685,28 @@ function exportUsersPdf(){
   document.getElementById("refreshAccessBtn").onclick=()=>loadApprovedUsers();
   document.getElementById("accessPlan").onchange=updateExpiryFromPlan;
   document.getElementById("accessStart").onchange=updateExpiryFromPlan;
+
+  // Use event delegation instead of inline onclick handlers.
+  // This is more reliable on mobile browsers/webviews and after table re-rendering.
+  accessBody.addEventListener("click",function(e){
+    const editBtn=e.target.closest(".access-edit-btn");
+    const revokeBtn=e.target.closest(".access-revoke-btn");
+
+    if(editBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const id=editBtn.getAttribute("data-id");
+      window.editApprovedUser(id);
+      return;
+    }
+
+    if(revokeBtn){
+      e.preventDefault();
+      e.stopPropagation();
+      const id=revokeBtn.getAttribute("data-id");
+      window.revokeApprovedUser(id);
+    }
+  });
 
 loginBtn.onclick=async()=>{
   loginBtn.disabled=true;
