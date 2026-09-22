@@ -254,8 +254,43 @@ async function initializeCMAAccess(){
    }
  }catch(e){
    console.error('CMA access initialization failed:',e);
-   // Keep the page usable if the access-control script is unavailable.
-   // Paid/full controls are not forcibly disabled here.
+   // Fail closed: if access control cannot be verified, use the
+   // fixed 30-question free mode rather than exposing full controls.
+   CMA_ACCESS_STATUS=null;
+   CMA_FREE_MODE=true;
+
+   cfg.questions=FREE_MCQ_LIMIT;
+   cfg.marks=1;
+   cfg.instant=true;
+   cfg.random=false;
+   cfg.timer='off';
+
+   $('sourceSelect').value='bank';
+   $('sourceSelect').disabled=true;
+   $('chapterSelect').value='all';
+   $('chapterSelect').disabled=true;
+   $('attemptSelect').disabled=true;
+
+   $('qCount').textContent=FREE_MCQ_LIMIT;
+   $('mCount').textContent=1;
+   $('instant').checked=true;
+   $('instant').disabled=true;
+   $('random').checked=false;
+   $('random').disabled=true;
+   $('timerMode').value='off';
+   $('timerMode').disabled=true;
+   $('qDown').disabled=true;
+   $('qUp').disabled=true;
+   $('mDown').disabled=true;
+   $('mUp').disabled=true;
+   $('sDown').disabled=true;
+   $('sUp').disabled=true;
+   $('wrongBtn').style.display='none';
+   $('bookBtn').style.display='none';
+   $('retryWrong').style.display='none';
+   $('reveal').style.display='none';
+   $('sourceSummary').textContent='Free Access — Fixed 30 MCQ Bank questions.';
+   $('chapterCount').textContent='Free access is limited to the fixed 30 MCQ Bank questions.';
  }
 }
 
