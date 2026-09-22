@@ -1,35 +1,34 @@
 /* =========================================================
-   CMA MCQ PORTAL - ACCESS CONTROL
-   TEST SITE: BUSINESS LAW & ETHICS
+   CMA MCQ PORTAL — ACCESS CONTROL
+   Test Site: Business Law & Ethics
 
-   FREE USER:
+   FREE MODE:
    - Fixed 30 MCQ Bank questions
-   - Q1 to Q30
-   - Same 30 questions every time
-   - No random
+   - Question IDs: 1 to 30
+   - Same questions can be attempted repeatedly
+   - No lifetime usage limit
+   - No random order
    - No timer
    - No chapter selection
    - No PYQ
    - No bookmarks
-   - No reattempt wrong
+   - No reattempt-wrong
    - Instant answer ON
 
-   PAID USER:
-   - Existing full functionality
+   PAID MODE:
+   - Existing subject functionality remains available
 ========================================================= */
 
 (function () {
   "use strict";
 
-  /* =====================================================
+  /* =========================================================
      CENTRAL FREE LIMIT
-
-     Later, if you want 30 -> 50:
-     just change this number.
-  ===================================================== */
+     Change only this number if later you want 30 -> 50.
+  ========================================================= */
   const FREE_MCQ_LIMIT = 30;
 
-  /* Fixed questions: Q1 to Q30 */
+  /* Fixed free question IDs: 1 to 30 */
   const FREE_MCQ_IDS = Array.from(
     { length: FREE_MCQ_LIMIT },
     (_, i) => i + 1
@@ -37,9 +36,6 @@
 
   const ADMIN_EMAIL = "taxxpath@gmail.com";
 
-  /* =====================================================
-     FIREBASE CONFIG
-  ===================================================== */
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyA7tGvsDYyYLSWFPeS6lsxlP8gLOw53Wrk",
     authDomain: "cma-mcq-portal.firebaseapp.com",
@@ -50,20 +46,23 @@
     measurementId: "G-H6GDK7Y3RJ"
   };
 
-  /* =====================================================
+  /* =========================================================
      FIREBASE INITIALIZATION
-  ===================================================== */
-  if (typeof firebase !== "undefined") {
+  ========================================================= */
+  function initFirebase() {
+    if (typeof firebase === "undefined") {
+      console.error("Firebase SDK is not loaded.");
+      return false;
+    }
 
     if (!firebase.apps.length) {
       firebase.initializeApp(FIREBASE_CONFIG);
     }
 
-  } else {
-
-    console.error("Firebase SDK is not loaded.");
-
+    return true;
   }
+
+  initFirebase();
 
   const auth =
     typeof firebase !== "undefined" && firebase.auth
@@ -75,18 +74,15 @@
       ? firebase.firestore()
       : null;
 
-  /* =====================================================
+  /* =========================================================
      HELPERS
-  ===================================================== */
+  ========================================================= */
 
   function normaliseEmail(email) {
-    return String(email || "")
-      .trim()
-      .toLowerCase();
+    return String(email || "").trim().toLowerCase();
   }
 
   function isExpired(dateValue) {
-
     if (!dateValue) return false;
 
     const expiry = String(dateValue).trim();
@@ -95,11 +91,15 @@
       return false;
     }
 
-    return expiry < new Date().toISOString().slice(0, 10);
+    const today = new Date().toISOString().slice(0, 10);
+
+    return expiry < today;
   }
 
+  /* =========================================================
+     CHECK PAID GROUP ACCESS
+  ========================================================= */
   function hasPaidGroupAccess(data) {
-
     if (!data) return false;
 
     return [
@@ -111,14 +111,83 @@
     ].some(Boolean);
   }
 
-  /* =====================================================
-     GET USER ACCESS STATUS
-  ===================================================== */
+  /* =========================================================
+     WAIT FOR FIREBASE AUTH TO INITIALIZE
+  ========================================================= */
+  function waitForAuthReady() {
+    return new Promise(function (resolve) {
 
+      if (!auth) {
+        resolve(null);
+        return;
+      }
+
+      /* Already available */
+      if (auth.currentUser) {
+        resolve(auth.currentUser);
+        return;
+      }
+
+      let finished = false;
+      let unsubscribe = null;
+
+      try {
+
+        unsubscribe = auth.onAuthStateChanged(function (user) {
+
+          if (finished) return;
+
+          finished = true;
+
+          try {
+            if (unsubscribe) {
+              unsubscribe();
+            }
+          } catch (e) {}
+
+          resolve(user || null);
+        });
+
+      } catch (error) {
+
+        console.warn("Auth initialization error:", error);
+
+        resolve(auth.currentUser || null);
+
+        return;
+      }
+
+      /* Safety timeout */
+      setTimeout(function () {
+
+        if (finished) return;
+
+        finished = true;
+
+        try {
+          if (unsubscribe) {
+            unsubscribe();
+          }
+        } catch (e) {}
+
+        resolve(auth.currentUser || null);
+
+      }, 5000);
+    });
+  }
+
+  /* =========================================================
+     GET CURRENT ACCESS STATUS
+  ========================================================= */
   async function getAccessStatus() {
 
-    /* Not signed in */
-    if (!auth || !auth.currentUser) {
+    const user = await waitForAuthReady();
+
+    /* -------------------------------------------------------
+       NOT SIGNED IN
+    ------------------------------------------------------- */
+
+    if (!user) {
 
       return {
         mode: "free",
@@ -128,15 +197,13 @@
         signedIn: false,
         data: null
       };
-
     }
 
-    const user = auth.currentUser;
     const email = normaliseEmail(user.email);
 
-    /* ===================================================
+    /* -------------------------------------------------------
        ADMIN = FULL ACCESS
-    =================================================== */
+    ------------------------------------------------------- */
 
     if (email === ADMIN_EMAIL) {
 
@@ -147,15 +214,15 @@
         isAdmin: true,
         signedIn: true,
         data: {
-          role: "admin"
+          role: "admin",
+          email: email
         }
       };
-
     }
 
-    /* ===================================================
-       GLOBAL ACCESS = FULL ACCESS
-    =================================================== */
+    /* -------------------------------------------------------
+       GLOBAL OPEN ACCESS
+    ------------------------------------------------------- */
 
     try {
 
@@ -179,9 +246,7 @@
             signedIn: true,
             data: globalRef.data()
           };
-
         }
-
       }
 
     } catch (error) {
@@ -190,12 +255,11 @@
         "Global access check failed:",
         error
       );
-
     }
 
-    /* ===================================================
-       APPROVED / SUBSCRIBED USER
-    =================================================== */
+    /* -------------------------------------------------------
+       APPROVED USER / SUBSCRIPTION CHECK
+    ------------------------------------------------------- */
 
     try {
 
@@ -220,17 +284,68 @@
             isExpired(data.expiryDate);
 
           /*
-             Active
-             + Group access
-             + Not expired
+             Primary access flags
+          */
+          let groupAccess =
+            hasPaidGroupAccess(data);
 
-             = PAID
+          /*
+             Compatibility:
+             Also allow access when admin data uses
+             group/accessGroup fields.
+          */
+
+          const group =
+            String(
+              data.group ||
+              data.accessGroup ||
+              ""
+            ).trim();
+
+          if (
+            group === "CMA Foundation" ||
+            group === "Foundation"
+          ) {
+            groupAccess = true;
+          }
+
+          if (
+            group === "CMA Inter Group 1" ||
+            group === "Inter Group 1"
+          ) {
+            groupAccess = true;
+          }
+
+          if (
+            group === "CMA Inter Group 2" ||
+            group === "Inter Group 2"
+          ) {
+            groupAccess = true;
+          }
+
+          if (
+            group === "CMA Final Group 3" ||
+            group === "Final Group 3"
+          ) {
+            groupAccess = true;
+          }
+
+          if (
+            group === "CMA Final Group 4" ||
+            group === "Final Group 4"
+          ) {
+            groupAccess = true;
+          }
+
+          /*
+             Active + non-expired + group access
+             = PAID MODE
           */
 
           if (
             status === "active" &&
             !expired &&
-            hasPaidGroupAccess(data)
+            groupAccess
           ) {
 
             return {
@@ -241,11 +356,8 @@
               signedIn: true,
               data: data
             };
-
           }
-
         }
-
       }
 
     } catch (error) {
@@ -254,18 +366,12 @@
         "Subscription access check failed:",
         error
       );
-
     }
 
-    /* ===================================================
-       EVERY OTHER SIGNED-IN USER = FREE MODE
-
-       IMPORTANT:
-       There is NO usage counter here.
-
-       Therefore the same 30 questions can be
-       attempted again and again.
-    =================================================== */
+    /* -------------------------------------------------------
+       SIGNED-IN USER WITHOUT PAID ACCESS
+       = FREE MODE
+    ------------------------------------------------------- */
 
     return {
 
@@ -280,18 +386,12 @@
       signedIn: true,
 
       data: null
-
     };
-
   }
 
-  /* =====================================================
+  /* =========================================================
      GET FIXED FREE QUESTIONS
-
-     This returns ONLY:
-       MCQ Bank
-       Question ID 1-30
-  ===================================================== */
+  ========================================================= */
 
   function getFreeQuestions(questions) {
 
@@ -299,7 +399,7 @@
       return [];
     }
 
-    const allowedIds =
+    const allowed =
       new Set(FREE_MCQ_IDS);
 
     return questions.filter(function (question) {
@@ -307,22 +407,21 @@
       return (
         question &&
         question.source === "bank" &&
-        allowedIds.has(
-          Number(question.id)
-        )
+        allowed.has(Number(question.id))
       );
 
     });
-
   }
 
-  /* =====================================================
-     CHECK FREE QUESTION
-  ===================================================== */
+  /* =========================================================
+     CHECK WHETHER QUESTION IS FREE
+  ========================================================= */
 
   function isFreeQuestion(question) {
 
-    if (!question) return false;
+    if (!question) {
+      return false;
+    }
 
     return (
       question.source === "bank" &&
@@ -330,12 +429,11 @@
         Number(question.id)
       )
     );
-
   }
 
-  /* =====================================================
+  /* =========================================================
      FREE MODE CONFIG
-  ===================================================== */
+  ========================================================= */
 
   function getFreeConfig() {
 
@@ -364,16 +462,12 @@
       allowRandom: false,
 
       allowTimer: false
-
     };
-
   }
 
-  /* =====================================================
-     APPLY FREE UI RESTRICTIONS
-
-     This will be used in the Business Law page.
-  ===================================================== */
+  /* =========================================================
+     APPLY FREE UI SETTINGS
+  ========================================================= */
 
   function applyFreeUI(options) {
 
@@ -431,17 +525,22 @@
 
       roundTimeRow:
         options.roundTimeRow ||
-        "roundTimeRow"
+        "roundTimeRow",
 
+      startBtn:
+        options.startBtn ||
+        "startBtn"
     };
 
     function get(id) {
+
       return document.getElementById(id);
+
     }
 
-    /* ================================================
+    /* -------------------------------------------------------
        MCQ BANK ONLY
-    ================================================ */
+    ------------------------------------------------------- */
 
     const sourceSelect =
       get(ids.sourceSelect);
@@ -460,12 +559,11 @@
       });
 
       sourceSelect.disabled = true;
-
     }
 
-    /* ================================================
-       CHAPTER OFF
-    ================================================ */
+    /* -------------------------------------------------------
+       CHAPTER SELECTION OFF
+    ------------------------------------------------------- */
 
     const chapterSelect =
       get(ids.chapterSelect);
@@ -475,12 +573,11 @@
       chapterSelect.value = "all";
 
       chapterSelect.disabled = true;
-
     }
 
-    /* ================================================
+    /* -------------------------------------------------------
        PYQ OFF
-    ================================================ */
+    ------------------------------------------------------- */
 
     const attemptSelect =
       get(ids.attemptSelect);
@@ -491,9 +588,9 @@
 
     }
 
-    /* ================================================
-       WRONG + BOOKMARK OFF
-    ================================================ */
+    /* -------------------------------------------------------
+       WRONG / BOOKMARK OFF
+    ------------------------------------------------------- */
 
     ["wrongBtn", "bookBtn"].forEach(
       function (key) {
@@ -506,15 +603,14 @@
           el.disabled = true;
 
           el.style.display = "none";
-
         }
 
       }
     );
 
-    /* ================================================
-       QUESTION COUNT FIXED
-    ================================================ */
+    /* -------------------------------------------------------
+       FIXED 30 QUESTIONS
+    ------------------------------------------------------- */
 
     const qDown =
       get(ids.qDown);
@@ -527,7 +623,6 @@
       qDown.disabled = true;
 
       qDown.style.display = "none";
-
     }
 
     if (qUp) {
@@ -535,12 +630,29 @@
       qUp.disabled = true;
 
       qUp.style.display = "none";
-
     }
 
-    /* ================================================
+    /* -------------------------------------------------------
+       MARKS CONTROL OFF
+    ------------------------------------------------------- */
+
+    const mDown =
+      get(ids.mDown);
+
+    const mUp =
+      get(ids.mUp);
+
+    if (mDown) {
+      mDown.disabled = true;
+    }
+
+    if (mUp) {
+      mUp.disabled = true;
+    }
+
+    /* -------------------------------------------------------
        RANDOM OFF
-    ================================================ */
+    ------------------------------------------------------- */
 
     const random =
       get(ids.random);
@@ -550,12 +662,11 @@
       random.checked = false;
 
       random.disabled = true;
-
     }
 
-    /* ================================================
+    /* -------------------------------------------------------
        TIMER OFF
-    ================================================ */
+    ------------------------------------------------------- */
 
     const timerMode =
       get(ids.timerMode);
@@ -565,7 +676,6 @@
       timerMode.value = "off";
 
       timerMode.disabled = true;
-
     }
 
     const questionTimeRow =
@@ -575,7 +685,6 @@
 
       questionTimeRow.style.display =
         "none";
-
     }
 
     const roundTimeRow =
@@ -585,14 +694,12 @@
 
       roundTimeRow.style.display =
         "none";
-
     }
-
   }
 
-  /* =====================================================
+  /* =========================================================
      PUBLIC API
-  ===================================================== */
+  ========================================================= */
 
   window.CMAAccess = {
 
@@ -627,7 +734,6 @@
           await getAccessStatus();
 
         return status.isFree === true;
-
       },
 
     isPaidMode:
@@ -637,10 +743,12 @@
           await getAccessStatus();
 
         return status.isPaid === true;
-
       }
-
   };
+
+  /* =========================================================
+     READY FLAG
+  ========================================================= */
 
   window.CMAAccessReady = true;
 
