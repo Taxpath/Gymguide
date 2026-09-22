@@ -98,15 +98,25 @@ async function startRound(mode){
  // Free users always get the same first 30 MCQ Bank questions.
  // Paid/admin users keep the original full functionality.
  if(window.CMAAccess){
-   CMA_ACCESS_STATUS=await CMAAccess.getAccessStatus();
-   CMA_FREE_MODE=!CMA_ACCESS_STATUS.fullAccess;
+   try{
+     CMA_ACCESS_STATUS=await CMAAccess.getAccessStatus();
+     CMA_FREE_MODE=!(CMA_ACCESS_STATUS && (CMA_ACCESS_STATUS.isPaid===true || CMA_ACCESS_STATUS.isAdmin===true));
+   }catch(accessError){
+     console.warn('Access check failed; starting in safe free mode.',accessError);
+     CMA_ACCESS_STATUS=null;
+     CMA_FREE_MODE=true;
+   }
+ }else{
+   // Never block the practice button if the optional access-control file
+   // has not loaded yet. Default safely to the fixed free 30-question mode.
+   CMA_FREE_MODE=true;
  }
 
  let base;
 
  if(CMA_FREE_MODE){
-   base=CMAAccess.getFreeQuestions(QUESTIONS)
-     .filter(q=>q.source==='bank')
+   base=QUESTIONS
+     .filter(q=>q && q.source==='bank' && Number(q.id)>=1 && Number(q.id)<=FREE_MCQ_LIMIT)
      .sort((a,b)=>Number(a.id)-Number(b.id))
      .slice(0,FREE_MCQ_LIMIT);
 
@@ -114,7 +124,9 @@ async function startRound(mode){
    cfg.random=false;
    cfg.timer='off';
    cfg.instant=true;
+   cfg.marks=1;
    $('qCount').textContent=FREE_MCQ_LIMIT;
+   $('mCount').textContent='1';
  }else{
    base=sourceQuestions();
    if(source()==='bank' && $('chapterSelect').value!=='all') base=base.filter(q=>String(q.chapter)===$('chapterSelect').value);
@@ -187,7 +199,7 @@ async function initializeCMAAccess(){
  try{
    if(window.CMAAccess){
      CMA_ACCESS_STATUS=await CMAAccess.getAccessStatus();
-     CMA_FREE_MODE=!CMA_ACCESS_STATUS.fullAccess;
+     CMA_FREE_MODE=!(CMA_ACCESS_STATUS && (CMA_ACCESS_STATUS.isPaid===true || CMA_ACCESS_STATUS.isAdmin===true));
 
      if(CMA_FREE_MODE){
        // Fixed free plan: exactly the same first 30 MCQ Bank questions.
