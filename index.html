@@ -201,6 +201,32 @@ input{
   font-size:14px;
 }
 input:focus{border-color:var(--gold)}
+
+.group-option{
+  margin:0;
+  padding:12px 13px;
+  background:#fffaf0;
+  border:1px solid var(--border);
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--teal);
+  cursor:pointer;
+}
+.group-option input{
+  width:auto;
+  margin:0;
+  accent-color:var(--teal);
+  transform:scale(1.1);
+}
+.group-option:has(input:checked){
+  border-color:var(--gold);
+  background:#fff7df;
+}
+
 .note{
   margin-top:12px;
   color:#6b7774;
@@ -326,15 +352,17 @@ footer strong{color:var(--teal)}
       <p>
         Choose an access plan, optionally apply a referral code, complete the payment, then enter your UTR / Transaction ID for manual verification.
       </p>
-<label for="attemptSelect">Course / Group</label>
-<select id="attemptSelect" required style="width:100%;margin-top:7px;padding:13px;border:1px solid #d6cebb;border-radius:10px;font-size:14px;">
-  <option value="">Select Course / Group</option>
-  <option value="CMA Foundation">CMA Foundation</option>
-  <option value="CMA Inter Group 1">CMA Inter Group 1</option>
-  <option value="CMA Inter Group 2">CMA Inter Group 2</option>
-  <option value="CMA Final Group 3">CMA Final Group 3</option>
-  <option value="CMA Final Group 4">CMA Final Group 4</option>
-</select>
+<label>Course / Group</label>
+<div id="groupSelector" style="margin-top:7px;display:grid;gap:8px;">
+  <label class="group-option"><input type="checkbox" class="groupCheck" value="CMA Foundation"> <span>CMA Foundation</span></label>
+  <label class="group-option"><input type="checkbox" class="groupCheck" value="CMA Inter Group 1"> <span>CMA Inter Group 1</span></label>
+  <label class="group-option"><input type="checkbox" class="groupCheck" value="CMA Inter Group 2"> <span>CMA Inter Group 2</span></label>
+  <label class="group-option"><input type="checkbox" class="groupCheck" value="CMA Final Group 3"> <span>CMA Final Group 3</span></label>
+  <label class="group-option"><input type="checkbox" class="groupCheck" value="CMA Final Group 4"> <span>CMA Final Group 4</span></label>
+</div>
+<div id="groupSelectionInfo" class="note" style="margin-top:8px;">
+  Select one or more groups. The plan price is multiplied by the number of selected groups.
+</div>
 
 <div class="plan-options" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0;">
   <button type="button" class="amountBtn secondary" data-amount="99" style="margin:0;padding:14px 6px;text-align:center;line-height:1.3;">
@@ -349,6 +377,10 @@ footer strong{color:var(--teal)}
     <span style="display:block;font-size:20px;font-weight:900;">₹299</span>
     <span style="display:block;font-size:12px;font-weight:900;margin-top:4px;">6 MONTHS</span>
   </button>
+</div>
+
+<div class="note" style="text-align:center;margin:0 0 10px;">
+  Group pricing: 1 group = 1× plan price • 2 groups = 2× • 3 groups = 3× • 4 groups = 4× • 5 groups = 5×
 </div>
 
 <div class="price">
@@ -448,7 +480,23 @@ const applyReferral=document.getElementById("applyReferral");
 const referralMessage=document.getElementById("referralMessage");
 const finalAmount=document.getElementById("finalAmount");
 const discountInfo=document.getElementById("discountInfo");
-const attemptSelect=document.getElementById("attemptSelect");
+const groupChecks=document.querySelectorAll(".groupCheck");
+const groupSelectionInfo=document.getElementById("groupSelectionInfo");
+
+function getSelectedGroups(){
+  return Array.from(groupChecks)
+    .filter(function(c){ return c.checked; })
+    .map(function(c){ return c.value; });
+}
+function getSelectedGroupText(){
+  return getSelectedGroups().join(", ");
+}
+function getGroupCount(){
+  return getSelectedGroups().length;
+}
+function getPlanMultiplier(){
+  return Math.max(1,getGroupCount());
+}
 
 let selectedAmount=99;
 let referralDiscount=null;
@@ -457,7 +505,9 @@ let appliedReferralCode="";
 function money(n){
   return "₹"+Number(n||0).toFixed(2).replace(/\.00$/,"");
 }
-function getBaseAmount(){ return selectedAmount; }
+function getBaseAmount(){
+  return selectedAmount * getPlanMultiplier();
+}
 function calculate(){
   const base=getBaseAmount();
   let discount=0;
@@ -475,9 +525,11 @@ function calculate(){
 function updatePrice(){
   const x=calculate();
   finalAmount.textContent=money(x.payable);
+  const count=getGroupCount();
+  const groupText=count+" group"+(count===1?"":"s");
   discountInfo.textContent=x.discount>0
-    ? "Original: "+money(x.base)+" • Discount: "+money(x.discount)+" • Payable: "+money(x.payable)
-    : "No referral discount applied";
+    ? groupText+" • Original: "+money(x.base)+" • Discount: "+money(x.discount)+" • Payable: "+money(x.payable)
+    : groupText+" • No referral discount applied";
   payBtn.textContent="💳 Pay "+money(x.payable)+" via UPI";
 }
 
@@ -559,7 +611,7 @@ function setSignedIn(user){
     googleBtn.style.display="none";
     logoutBtn.style.display="block";
 
-    const ready=!!attemptSelect.value;
+    const ready=getGroupCount()>0;
     payBtn.disabled=!ready;
     utr.disabled=!ready;
     submitBtn.disabled=!ready;
@@ -577,16 +629,23 @@ function setSignedIn(user){
   }
 }
 
-attemptSelect.addEventListener("change",function(){
-  const ready=!!attemptSelect.value && !!auth.currentUser;
-  payBtn.disabled=!ready;
-  utr.disabled=!ready;
-  submitBtn.disabled=!ready;
-  if(attemptSelect.value){
-    msg("Selected: "+attemptSelect.options[attemptSelect.selectedIndex].text);
-  }else{
-    msg("");
-  }
+groupChecks.forEach(function(check){
+  check.addEventListener("change",function(){
+    const count=getGroupCount();
+    const ready=count>0 && !!auth.currentUser;
+    payBtn.disabled=!ready;
+    utr.disabled=!ready;
+    submitBtn.disabled=!ready;
+
+    if(count===0){
+      groupSelectionInfo.textContent="Select one or more groups. The plan price is multiplied by the number of selected groups.";
+      msg("");
+    }else{
+      groupSelectionInfo.textContent=count+" group"+(count===1?"":"s")+" selected • "+money(selectedAmount*count)+" before referral discount";
+      msg("Selected: "+getSelectedGroupText());
+    }
+    updatePrice();
+  });
 });
 
 googleBtn.onclick=function(){
@@ -617,9 +676,8 @@ payBtn.onclick=function(){
     msg("Please sign in first.",true);
     return;
   }
-  if(!attemptSelect.value){
-    msg("Please select the CMA Group before making payment.",true);
-    attemptSelect.focus();
+  if(getGroupCount()===0){
+    msg("Please select at least one CMA Group before making payment.",true);
     return;
   }
   const x=calculate();
@@ -640,9 +698,8 @@ submitBtn.onclick=function(){
     msg("Please sign in first.",true);
     return;
   }
-  if(!attemptSelect.value){
-    msg("Please select the CMA Group before submitting payment details.",true);
-    attemptSelect.focus();
+  if(getGroupCount()===0){
+    msg("Please select at least one CMA Group before submitting payment details.",true);
     return;
   }
   if(!transactionId){
