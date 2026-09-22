@@ -19,12 +19,104 @@ select,.field{width:100%;padding:12px;border:1px solid var(--rule);border-radius
 .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.qno{font-size:.78rem;color:var(--gold);font-weight:800}.bookmark{border:1px solid var(--rule);background:transparent;border-radius:9px;padding:8px 10px;color:var(--teal);font-weight:750}.bookmark.on{border-color:var(--gold);color:var(--gold)}.qtext{font-size:1.12rem;line-height:1.55;font-weight:650;margin:0 0 16px}.options{display:flex;flex-direction:column;gap:10px}.option{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;padding:14px;border:1px solid var(--rule);border-radius:12px;background:var(--paper2);color:var(--ink)}.option .tag{flex:0 0 auto;width:28px;height:28px;border-radius:50%;border:1px solid var(--muted);display:grid;place-items:center;font-weight:800;font-size:.78rem}.option.selected{border-color:var(--teal);background:#e0eceb}.option.correct{border-color:var(--good);background:var(--goodbg)}.option.wrong{border-color:var(--bad);background:var(--badbg)}.option.disabled{cursor:default}.feedback{display:none;margin:12px 0;padding:12px;border-radius:10px;font-weight:750}.feedback.show{display:block}.feedback.right{background:var(--goodbg);color:var(--good)}.feedback.miss{background:var(--badbg);color:var(--bad)}.nav{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px;margin-top:13px}.nav button{padding:12px;border-radius:10px}.reveal{width:100%;margin-top:9px;padding:10px;border:0;background:transparent;text-decoration:underline;color:var(--muted)}
 .results{text-align:center;padding-top:26px}.score{font-size:3.3rem;font-weight:850;color:var(--teal2)}.pct{font-size:1.05rem;color:var(--gold);font-weight:800}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}.stat{padding:12px 5px;border:1px solid var(--rule);background:var(--paper2);border-radius:10px}.stat b{font-size:1.3rem;display:block}.stat span{font-size:.68rem;color:var(--muted);font-weight:800;text-transform:uppercase}.actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions button{padding:12px;border-radius:10px}.review{margin-top:18px;text-align:left}.review-item{padding:13px;border:1px solid var(--rule);border-radius:11px;background:var(--paper2);margin:9px 0}.review-item.ok{border-left:4px solid var(--good)}.review-item.no{border-left:4px solid var(--bad)}.review-q{font-weight:750;line-height:1.45}.review-meta{font-size:.8rem;line-height:1.5;margin-top:8px}.good{color:var(--good)}.bad{color:var(--bad)}.empty{padding:14px;color:var(--muted);background:var(--paper2);border:1px dashed var(--rule);border-radius:10px}.explanation{margin-top:10px;padding:12px;border-left:4px solid var(--gold);background:var(--paper);border-radius:8px;color:var(--ink);font-size:.86rem;line-height:1.55}.explanation b{color:var(--gold)}
 @media(max-width:520px){.hero h1{font-size:1.42rem}.stats{grid-template-columns:repeat(2,1fr)}.nav{grid-template-columns:1fr 1.3fr 1fr}.qtext{font-size:1.02rem}}
+
+/* ================= SUBSCRIPTION LOCK MODAL ================= */
+#subscriptionModal{
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(4,18,20,.68);
+  backdrop-filter:blur(3px);
+}
+#subscriptionModal.show{display:flex}
+.subscription-box{
+  width:min(430px,100%);
+  background:#fff;
+  color:#22302f;
+  border-radius:18px;
+  padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.3);
+  text-align:center;
+}
+.subscription-icon{
+  width:54px;height:54px;
+  margin:0 auto 12px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff6df;
+  font-size:25px;
+}
+.subscription-box h3{
+  margin:0 0 9px;
+  color:#0d3b3e;
+  font-size:21px;
+}
+.subscription-box p{
+  margin:0 auto;
+  color:#5b6b69;
+  line-height:1.55;
+  font-size:14px;
+}
+.subscription-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:20px;
+}
+.subscription-actions button{
+  margin:0;
+  padding:13px 12px;
+  border-radius:10px;
+  border:0;
+  font-weight:800;
+  cursor:pointer;
+}
+#buyPlanBtn{background:#c8a24a;color:#082627}
+#returnPlanBtn{background:#fff;color:#0d3b3e;border:1px solid #d9d0bd}
+.free-lock-note{
+  display:block;
+  margin-top:9px;
+  padding:9px 11px;
+  border-radius:10px;
+  background:#fff8e9;
+  color:#6f5b24;
+  font-size:12px;
+  line-height:1.45;
+}
+.locked-option-note{
+  margin-top:9px;
+  font-size:12px;
+  color:#8a6d2f;
+}
+
 </style></head><body>
+
+<div id="subscriptionModal" role="dialog" aria-modal="true" aria-labelledby="subscriptionTitle">
+  <div class="subscription-box">
+    <div class="subscription-icon">🔒</div>
+    <h3 id="subscriptionTitle">Subscription Required</h3>
+    <p id="subscriptionMessage">
+      If you want to attempt PYQ or more than 30 questions, please take a Subscription Plan.
+    </p>
+    <div class="subscription-actions">
+      <button type="button" id="buyPlanBtn">Buy Plan</button>
+      <button type="button" id="returnPlanBtn">Return</button>
+    </div>
+  </div>
+</div>
+
 <div class="app">
 <header class="top"><div class="topline"><div><div class="brand">CMA Intermediate Group 1</div><div class="mini">MCQ Practice System</div></div><button class="home" id="homeBtn">⌂ Home</button></div></header>
 <section id="setup" class="screen active">
 <div class="hero"><h1>Business Law and Ethics</h1><p><span id="sourceSummary">395 MCQ Bank questions loaded.</span> Choose the question source, round size, answer mode and timer before starting.</p></div>
-<div class="card"><h2>Question Source</h2><div class="row"><div><div class="label">What do you want to solve?</div><span class="desc">Choose between the regular MCQ Bank and Previous Year Papers.</span></div><select id="sourceSelect" style="max-width:240px"><option value="bank">MCQ Bank</option><option value="pyq">Previous Year Paper</option></select></div></div>
+<div class="card"><h2>Question Source</h2><div class="row"><div><div class="label">What do you want to solve?</div><span class="desc">Choose between the regular MCQ Bank and Previous Year Papers.</span></div><select id="sourceSelect" style="max-width:240px"><option value="bank">MCQ Bank</option><option value="pyq">Previous Year Paper</option></select>
+<div id="freeSourceNote" class="free-lock-note" style="display:none">
+  Free Access: 30 fixed MCQ Bank questions. Previous Year Paper is available with the Subscription Plan.
+</div></div></div>
 <div class="card" id="bankCard"><h2>Chapter</h2><select id="chapterSelect"><option value="all">All Chapters</option><option value="1">Chapter 1 — Introduction to Law and Legal System in India</option><option value="2">Chapter 2 — Indian Contracts Act, 1872</option><option value="3">Chapter 3 — Sale of Goods Act, 1930</option><option value="4">Chapter 4 — Negotiable Instruments Act, 1881</option><option value="5">Chapter 5 — Indian Partnership Act, 1932</option><option value="6">Chapter 6 — Limited Liability Partnership Act, 2008</option><option value="7">Chapter 7 — Factories Act, 1948</option><option value="8">Chapter 8 — Payment of Gratuity Act, 1972</option><option value="9">Chapter 9 — Employees Provident Fund and Miscellaneous Provisions Act, 1952</option><option value="10">Chapter 10 — Employees State Insurance Act, 1948</option><option value="11">Chapter 11 — The Code on Wages, 2019</option><option value="12">Chapter 12 — Companies Act, 2013</option><option value="13">Chapter 13 — Business Ethics and Emotional Intelligence</option></select><span class="desc" id="chapterCount">395 questions available in all chapters.</span></div>
 <div class="card" id="pyqCard" style="display:none"><h2>Previous Year Paper</h2><select id="attemptSelect"><option value="all">All Attempts — 75 Questions</option><option value="June 2026">June 2026 — 15 Questions</option><option value="December 2025">December 2025 — 15 Questions</option><option value="June 2025">June 2025 — 15 Questions</option><option value="December 2024">December 2024 — 15 Questions</option><option value="June 2024">June 2024 — 15 Questions</option></select><span class="desc" id="attemptCount">75 previous-year questions available.</span></div>
 <div class="quick"><button class="outline" id="wrongBtn">↻ Reattempt Wrong <span id="wrongCount"></span></button><button class="outline" id="bookBtn">★ Bookmarked <span id="bookCount"></span></button></div>
@@ -66,7 +158,20 @@ function setDefaultRoundForSource(){
 }
 function updateSourceUI(){
  const isPyq=source()==='pyq';
- $('bankCard').style.display=isPyq?'none':'block';$('pyqCard').style.display=isPyq?'block':'none';
+
+ // Free users cannot enter PYQ. If a change is somehow triggered,
+ // immediately return to MCQ Bank and show the subscription popup.
+ if(CMA_FREE_MODE && isPyq){
+   $('sourceSelect').value='bank';
+   $('bankCard').style.display='block';
+   $('pyqCard').style.display='none';
+   showSubscriptionPopup('PYQ is available with the Subscription Plan.');
+   setFreeSubjectUI();
+   return;
+ }
+
+ $('bankCard').style.display=isPyq?'none':'block';
+ $('pyqCard').style.display=isPyq?'block':'none';
  setDefaultRoundForSource(); updateCounts(); updateRoundDesc();
  $('sourceSummary').textContent=isPyq?'75 Previous Year Paper questions loaded across 5 attempts.':'395 MCQ Bank questions loaded.';
 }
@@ -76,8 +181,79 @@ function updateRoundDesc(){
 function updateChapterCount(){const v=$('chapterSelect').value;const n=v==='all'?sourceQuestions().length:sourceQuestions().filter(q=>String(q.chapter)===v).length;$('chapterCount').textContent=n+' questions available in '+(v==='all'?'all chapters':'selected chapter')+'.';cfg.questions=Math.min(cfg.questions,n);if(cfg.questions<5&&n>=5)cfg.questions=5;$('qCount').textContent=cfg.questions;}
 function updateAttempt(){setDefaultRoundForSource();updateRoundDesc()}
 function step(id,delta,min,max,render){cfg[id]=Math.max(min,Math.min(max,cfg[id]+delta));render()}
+
+function showSubscriptionPopup(reason){
+ const modal=$('subscriptionModal');
+ if(!modal) return;
+ $('subscriptionMessage').textContent = reason ||
+   'If you want to attempt PYQ or more than 30 questions, please take a Subscription Plan.';
+ modal.classList.add('show');
+}
+function hideSubscriptionPopup(){
+ const modal=$('subscriptionModal');
+ if(modal) modal.classList.remove('show');
+}
+function goToSubscriptionPlan(){
+ // Existing portal home/payment/access page.
+ window.location.href='../../index.html';
+}
+function setFreeSubjectUI(){
+ if(!CMA_FREE_MODE) return;
+
+ cfg.questions=FREE_MCQ_LIMIT;
+ cfg.marks=1;
+ cfg.instant=true;
+ cfg.random=false;
+ cfg.timer='off';
+
+ $('sourceSelect').value='bank';
+ $('sourceSelect').disabled=false;
+
+ const pyqOption=$('sourceSelect').querySelector('option[value="pyq"]');
+ if(pyqOption){
+   pyqOption.disabled=true;
+   pyqOption.textContent='Previous Year Paper 🔒 — Subscription Required';
+ }
+
+ $('chapterSelect').value='all';
+ $('chapterSelect').disabled=true;
+ $('attemptSelect').disabled=true;
+
+ $('qCount').textContent=FREE_MCQ_LIMIT;
+ $('mCount').textContent='1';
+ $('instant').checked=true;
+ $('instant').disabled=true;
+ $('random').checked=false;
+ $('random').disabled=true;
+ $('timerMode').value='off';
+ $('timerMode').disabled=true;
+ $('questionTimeRow').style.display='none';
+ $('roundTimeRow').style.display='none';
+
+ $('qDown').disabled=true;
+ $('qUp').disabled=true;
+ $('mDown').disabled=true;
+ $('mUp').disabled=true;
+ $('sDown').disabled=true;
+ $('sUp').disabled=true;
+
+ $('bankCard').style.display='block';
+ $('pyqCard').style.display='none';
+
+ $('wrongBtn').style.display='none';
+ $('bookBtn').style.display='none';
+ $('retryWrong').style.display='none';
+ $('reveal').style.display='none';
+
+ $('sourceSummary').textContent='Free Access — Fixed 30 MCQ Bank questions.';
+ $('chapterCount').textContent='Free access is limited to the fixed 30 MCQ Bank questions.';
+ if($('freeSourceNote')) $('freeSourceNote').style.display='block';
+}
+
 function setupEvents(){
  $('sourceSelect').onchange=updateSourceUI;
+ $('buyPlanBtn').onclick=goToSubscriptionPlan;
+ $('returnPlanBtn').onclick=hideSubscriptionPopup;
  $('chapterSelect').onchange=()=>{updateChapterCount();updateRoundDesc()};
  $('attemptSelect').onchange=updateAttempt;
  $('qDown').onclick=()=>step('questions',-5,5,selectedMaxQuestions(),()=> $('qCount').textContent=cfg.questions);
@@ -115,6 +291,16 @@ async function startRound(mode){
  let base;
 
  if(CMA_FREE_MODE){
+   // Defensive checks: never start a free round above 30 or from PYQ.
+   if(source()==='pyq'){
+     showSubscriptionPopup('If you want to attempt PYQ, please take a Subscription Plan.');
+     return;
+   }
+   if(Number(cfg.questions)>FREE_MCQ_LIMIT){
+     showSubscriptionPopup('If you want to attempt more than 30 questions, please take a Subscription Plan.');
+     return;
+   }
+
    base=QUESTIONS
      .filter(q=>q && q.source==='bank' && Number(q.id)>=1 && Number(q.id)<=FREE_MCQ_LIMIT)
      .sort((a,b)=>Number(a.id)-Number(b.id))
@@ -202,95 +388,28 @@ async function initializeCMAAccess(){
      CMA_FREE_MODE=!(CMA_ACCESS_STATUS && (CMA_ACCESS_STATUS.isPaid===true || CMA_ACCESS_STATUS.isAdmin===true));
 
      if(CMA_FREE_MODE){
-       // Fixed free plan: exactly the same first 30 MCQ Bank questions.
-       cfg.questions=FREE_MCQ_LIMIT;
-       cfg.marks=1;
-       cfg.instant=true;
-       cfg.random=false;
-       cfg.timer='off';
-
-       $('sourceSelect').value='bank';
-       $('sourceSelect').disabled=true;
-
-       $('chapterSelect').value='all';
-       $('chapterSelect').disabled=true;
-
-       $('attemptSelect').disabled=true;
-
-       $('qCount').textContent=FREE_MCQ_LIMIT;
-       $('mCount').textContent=1;
-
-       $('instant').checked=true;
-       $('instant').disabled=true;
-
-       $('random').checked=false;
-       $('random').disabled=true;
-
-       $('timerMode').value='off';
-       $('timerMode').disabled=true;
-       $('questionTimeRow').style.display='none';
-       $('roundTimeRow').style.display='none';
-
-       $('qDown').disabled=true;
-       $('qUp').disabled=true;
-       $('mDown').disabled=true;
-       $('mUp').disabled=true;
-       $('sDown').disabled=true;
-       $('sUp').disabled=true;
-
-       $('bankCard').style.display='block';
-       $('pyqCard').style.display='none';
-
-       $('wrongBtn').style.display='none';
-       $('bookBtn').style.display='none';
-       $('retryWrong').style.display='none';
-       $('reveal').style.display='none';
-
-       $('sourceSummary').textContent='Free Access — Fixed 30 MCQ Bank questions.';
-       $('chapterCount').textContent='Free access is limited to the fixed 30 MCQ Bank questions.';
+       setFreeSubjectUI();
      }else{
+       $('sourceSelect').disabled=false;
+       const pyqOption=$('sourceSelect').querySelector('option[value="pyq"]');
+       if(pyqOption){
+         pyqOption.disabled=false;
+         pyqOption.textContent='Previous Year Paper';
+       }
+       if($('freeSourceNote')) $('freeSourceNote').style.display='none';
        $('retryWrong').style.display='block';
      }
+   }else{
+     // Safe default if access-control.js did not load.
+     CMA_FREE_MODE=true;
+     setFreeSubjectUI();
    }
  }catch(e){
    console.error('CMA access initialization failed:',e);
-   // Fail closed: if access control cannot be verified, use the
-   // fixed 30-question free mode rather than exposing full controls.
+   // Fail closed to the fixed free plan instead of leaving paid controls open.
    CMA_ACCESS_STATUS=null;
    CMA_FREE_MODE=true;
-
-   cfg.questions=FREE_MCQ_LIMIT;
-   cfg.marks=1;
-   cfg.instant=true;
-   cfg.random=false;
-   cfg.timer='off';
-
-   $('sourceSelect').value='bank';
-   $('sourceSelect').disabled=true;
-   $('chapterSelect').value='all';
-   $('chapterSelect').disabled=true;
-   $('attemptSelect').disabled=true;
-
-   $('qCount').textContent=FREE_MCQ_LIMIT;
-   $('mCount').textContent=1;
-   $('instant').checked=true;
-   $('instant').disabled=true;
-   $('random').checked=false;
-   $('random').disabled=true;
-   $('timerMode').value='off';
-   $('timerMode').disabled=true;
-   $('qDown').disabled=true;
-   $('qUp').disabled=true;
-   $('mDown').disabled=true;
-   $('mUp').disabled=true;
-   $('sDown').disabled=true;
-   $('sUp').disabled=true;
-   $('wrongBtn').style.display='none';
-   $('bookBtn').style.display='none';
-   $('retryWrong').style.display='none';
-   $('reveal').style.display='none';
-   $('sourceSummary').textContent='Free Access — Fixed 30 MCQ Bank questions.';
-   $('chapterCount').textContent='Free access is limited to the fixed 30 MCQ Bank questions.';
+   setFreeSubjectUI();
  }
 }
 
