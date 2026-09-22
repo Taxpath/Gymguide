@@ -504,7 +504,7 @@ function exportUsersPdf(){
 
     accessBody.innerHTML=rows.map(x=>{
       const status=accessStatus(x);
-      const email=htmlmod.escape ? htmlmod.escape(x.email||"") : String(x.email||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+      const email=String(x.email||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
       const name=String(x.displayName||x.name||"—").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
       const group=String(x.group||x.course||x.accessGroup||"—").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
       const plan=String(x.plan||"—").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
@@ -578,6 +578,14 @@ function exportUsersPdf(){
         name:name,
         group,
         accessGroup:group,
+
+        // Group-specific access flags used by access-control.js
+        accessFoundation: group==="CMA Foundation",
+        accessInterGroup1: group==="CMA Inter Group 1",
+        accessInterGroup2: group==="CMA Inter Group 2",
+        accessFinalGroup3: group==="CMA Final Group 3",
+        accessFinalGroup4: group==="CMA Final Group 4",
+
         plan,
         startDate,
         expiryDate,
